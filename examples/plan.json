@@ -1,0 +1,15 @@
+{
+  "title": "Pick the next thing to build",
+  "groups": [
+    { "id": "g1", "col": 0, "why": "two notes asking for the same thing in different words" },
+    { "id": "g2", "col": 1, "why": "a decision beside what happened after it" },
+    { "id": "decided", "label": "Decided", "col": 2, "zone": true }
+  ],
+  "cards": [
+    { "id": "c1", "kind": "quote", "title": "Users want it unfinished", "body": "if it looks done, nobody touches it", "source": { "author": "Rosa", "date": "Mar 4" }, "place": { "in": "g1" } },
+    { "id": "c2", "kind": "note", "title": "Reviewers skip polished drafts", "body": "comments drop off once a draft has headings and a summary", "place": { "in": "g1" } },
+    { "id": "c3", "kind": "note", "title": "We chose weekly releases", "source": { "label": "planning notes", "date": "Feb 20" }, "place": { "in": "g2" } },
+    { "id": "c4", "kind": "quote", "title": "Two releases slipped since", "body": "we keep batching to hit the date", "source": { "author": "Kim", "date": "Mar 6" }, "place": { "near": "c3", "side": "right", "overlap": true } },
+    { "id": "p1", "kind": "prompt", "title": "Which of these do we test this week?", "place": { "edge": "g2", "side": "below" } }
+  ]
+}

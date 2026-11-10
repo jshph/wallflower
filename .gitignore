@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+*.tgz
+.env.local
+
+# Boards and run notes are local working data and often hold private meeting material.
+data/

@@ -1,0 +1,373 @@
+:root {
+  --rb-paper: #f3efe7;
+  --rb-card: #fcfaf5;
+  --rb-ink: #2b2723;
+  --rb-muted: #8a8178;
+  --rb-line: #ddd5c8;
+  --rb-accent: #e2452b;
+  --rb-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --rb-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --rb-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --rb-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+html, body, #root, .rb-app { margin: 0; height: 100%; }
+.rb-app { position: fixed; inset: 0; }
+.rb-app .tl-container { --tl-color-background: var(--rb-paper); }
+.rb-app .tl-background { background-color: var(--rb-paper); }
+
+/* ---------- cards ---------- */
+
+.rb-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--rb-card);
+  border: 1px solid var(--rb-line);
+  box-shadow: 0 1px 0 rgba(43, 39, 35, 0.04), 0 6px 18px -10px rgba(43, 39, 35, 0.25);
+  color: var(--rb-ink);
+  font-family: var(--rb-sans);
+  overflow: hidden;
+}
+
+.rb-head {
+  box-sizing: content-box;
+  height: 18px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--rb-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.rb-source { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
+.rb-source.is-link { pointer-events: all; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color 0.2s; }
+.rb-source.is-link:hover { text-decoration-color: currentColor; }
+.rb-n {
+  flex-shrink: 0;
+  min-width: 18px; height: 18px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: 600 10.5px/1 var(--rb-sans); color: var(--rb-muted);
+  border: 1px solid var(--rb-line); background: var(--rb-paper);
+}
+
+.rb-title {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.rb-body {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: #4b453f;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+.rb-title + .rb-body { margin-top: 6px; }
+.rb-head + .rb-body { margin-top: 0; }
+.rb-foot {
+  box-sizing: border-box;
+  height: 30px;
+  padding-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--rb-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.rb-foot span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rb-people { color: var(--rb-ink); font-weight: 500; }
+
+/* note: a vault page */
+.rb-kind-note .rb-title { font-family: var(--rb-serif); font-size: 16px; font-weight: 600; }
+.rb-diamond { color: #b9ad9c; font-size: 9px; }
+
+/* quote: something a person said */
+.rb-kind-quote { background: #fffdf8; border-left: 3px solid var(--rb-accent); }
+.rb-kind-quote .rb-quote-body { font-family: var(--rb-serif); font-style: italic; font-size: 17px; line-height: 23px; color: var(--rb-ink); flex: 1 1 auto; }
+.rb-gist { font-size: 13px; line-height: 20px; color: #5e5750; flex-shrink: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rb-gist + .rb-body { margin-top: 6px; }
+.rb-quote-glyph { font-family: var(--rb-serif); font-size: 22px; line-height: 18px; color: var(--rb-accent); height: 18px; }
+
+/* ---------- entrances, exits, remote motion ---------- */
+
+@keyframes rb-enter {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); filter: blur(3px); }
+  60% { filter: blur(0); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes rb-leave {
+  to { opacity: 0; transform: scale(0.96); filter: blur(2px); }
+}
+.rb-enter { animation: rb-enter 560ms var(--rb-ease) both; }
+.rb-leaving { animation: rb-leave 260ms ease forwards; }
+.rb-remote-motion .tl-shape { transition: transform 650ms var(--rb-ease); }
+
+/* ---------- clusters and zones ---------- */
+
+.rb-cluster {
+  position: relative;
+  box-sizing: border-box;
+  border-radius: 18px;
+  border: 1px solid rgba(160, 148, 128, 0.35);
+  background: rgba(255, 252, 245, 0.55);
+  animation: rb-fade 500ms ease both;
+}
+@keyframes rb-fade { from { opacity: 0; } to { opacity: 1; } }
+.rb-cluster.is-zone { border: 1.5px dashed rgba(226, 69, 43, 0.55); background: rgba(226, 69, 43, 0.035); }
+.rb-cluster-label {
+  position: absolute;
+  left: 6px;
+  bottom: 100%;
+  padding: 0 16px 6px;
+  white-space: nowrap;
+  pointer-events: all;
+  cursor: text;
+  font: italic 16px/22px var(--rb-serif);
+  color: #5e5750;
+}
+.rb-cluster-label.is-empty { color: #c2b8a8; letter-spacing: 0.2em; }
+.is-zone .rb-cluster-label { color: var(--rb-accent); font-style: normal; font-family: var(--rb-sans); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.rb-cluster-input {
+  position: absolute;
+  left: 18px;
+  bottom: calc(100% + 4px);
+  width: calc(100% - 36px);
+  box-sizing: border-box;
+  font: italic 16px/22px var(--rb-serif);
+  color: var(--rb-ink);
+  border: none;
+  border-bottom: 1px solid var(--rb-accent);
+  background: transparent;
+  outline: none;
+  pointer-events: all;
+}
+
+/* ---------- the agent cursor, sticky attachment ---------- */
+
+.rb-agent-cursor {
+  position: absolute; left: 0; top: 0;
+  display: flex; align-items: flex-start; gap: 4px;
+  opacity: 0;
+  transition: transform 420ms var(--rb-ease), opacity 300ms ease;
+  pointer-events: none;
+  z-index: 10;
+}
+.rb-agent-cursor.is-on { opacity: 1; }
+.rb-agent-cursor path { fill: var(--rb-accent); stroke: #fff; stroke-width: 1.2; }
+.rb-agent-cursor span {
+  margin-top: 12px;
+  font: 500 11px/1 var(--rb-sans);
+  color: #fff; background: var(--rb-accent);
+  padding: 4px 7px; border-radius: 6px; white-space: nowrap;
+}
+
+/* ---------- top bar ---------- */
+
+.rb-topbar {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 500;
+  display: flex; align-items: center; gap: 18px;
+  padding: 8px 10px 8px 18px;
+  background: rgba(252, 250, 245, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--rb-line);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px -14px rgba(43, 39, 35, 0.35);
+  font-family: var(--rb-sans);
+  max-width: calc(100vw - 420px);
+}
+.rb-title-block { flex-shrink: 1; min-width: 0; }
+.rb-board-title { font: 600 15px/1.2 var(--rb-serif); color: var(--rb-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+.rb-presence { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; flex-shrink: 0; margin-left: 8px; }
+.rb-person { white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: #5e5750; padding: 3px 8px; border-radius: 10px; background: #efe9de; }
+.rb-person i { width: 6px; height: 6px; border-radius: 50%; background: #7fae6c; }
+.rb-person.is-agent i { background: var(--rb-accent); }
+.rb-person.is-busy { background: rgba(226, 69, 43, 0.1); color: #a8331f; }
+.rb-person.is-busy i { animation: rb-pulse 1s ease-in-out infinite; }
+@keyframes rb-pulse { 50% { transform: scale(1.7); opacity: 0.5; } }
+.rb-conn { font-size: 10.5px; color: var(--rb-muted); }
+.rb-conn.is-offline { color: var(--rb-accent); }
+.rb-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.rb-actions button { white-space: nowrap; }
+.rb-actions button {
+  font: 500 12px var(--rb-sans); color: var(--rb-ink);
+  background: #fff; border: 1px solid var(--rb-line); border-radius: 8px;
+  padding: 6px 10px; cursor: pointer;
+}
+.rb-actions button:hover { border-color: var(--rb-accent); }
+
+/* Take another pass: the person hands the board back to the agent. */
+.rb-pass { position: relative; }
+.rb-actions .rb-pass-button { background: var(--rb-marker, #2d4e8f); border-color: transparent; color: #fff; }
+.rb-actions .rb-pass-button:hover { border-color: transparent; filter: brightness(1.1); }
+.rb-actions .rb-pass-button.is-saved { background: #fff; color: var(--rb-marker, #2d4e8f); border-color: currentColor; }
+.rb-actions .rb-pass-button.is-reading { background: #fff; color: var(--rb-muted); border-color: var(--rb-line); cursor: default; animation: rb-breathe 1.6s ease-in-out infinite; }
+@keyframes rb-breathe { 50% { opacity: 0.55; } }
+.rb-pass-pop {
+  position: absolute; right: 0; top: calc(100% + 6px);
+  display: flex; gap: 6px; padding: 8px;
+  background: #fff; border: 1px solid var(--rb-line); border-radius: 10px;
+  box-shadow: 0 8px 24px -12px rgba(43, 39, 35, 0.4);
+}
+.rb-pass-pop input { width: 260px; font: 13px var(--rb-sans); border: 1px solid var(--rb-line); border-radius: 6px; padding: 6px 8px; outline: none; }
+.rb-pass-pop input:focus { border-color: var(--rb-marker, #2d4e8f); }
+
+/* The reader: the source around a card, opened from its source line or by double-clicking it. */
+.rb-reader {
+  position: fixed; z-index: 600; box-sizing: border-box;
+  display: flex; flex-direction: column;
+  background: #fffdf7; border: 1px solid var(--rb-line); border-radius: 10px;
+  box-shadow: 0 14px 40px -16px rgba(43, 39, 35, 0.45);
+  font-family: var(--rb-sans); color: var(--rb-ink);
+  animation: rb-reader-in 140ms var(--rb-ease) both;
+}
+@keyframes rb-reader-in { from { opacity: 0; transform: translateY(4px); } }
+.rb-reader-head { display: flex; align-items: baseline; gap: 8px; padding: 12px 10px 8px 16px; border-bottom: 1px solid #eee7da; }
+.rb-reader-label { font: 600 13px/1.3 var(--rb-sans); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rb-reader-meta { font-size: 11.5px; color: var(--rb-muted); white-space: nowrap; }
+.rb-reader-close { margin-left: auto; border: none; background: none; font-size: 18px; line-height: 1; color: var(--rb-muted); cursor: pointer; padding: 0 4px; }
+.rb-reader-close:hover { color: var(--rb-ink); }
+.rb-reader-text {
+  overflow-y: auto; padding: 12px 16px 14px; white-space: pre-wrap; overflow-wrap: anywhere;
+  font: 14px/1.55 var(--rb-serif); color: #4a443e;
+}
+.rb-reader-text mark { background: rgba(226, 69, 43, 0.13); color: var(--rb-ink); border-radius: 2px; box-shadow: 0 0 0 2px rgba(226, 69, 43, 0.13); }
+.rb-reader-h { font-family: var(--rb-sans); font-size: 12.5px; letter-spacing: 0.02em; color: var(--rb-ink); }
+.rb-reader-ellipsis { color: var(--rb-muted); }
+.rb-reader-foot { display: flex; justify-content: space-between; gap: 12px; padding: 8px 16px 11px; border-top: 1px solid #eee7da; font-size: 11.5px; color: var(--rb-muted); }
+.rb-reader-foot a { color: var(--rb-marker, #2d4e8f); text-decoration: none; white-space: nowrap; }
+.rb-reader-foot a:hover { text-decoration: underline; }
+
+/* While a sticky is dragged, outline what it will be read as attached to; once it sits on a card, pin it. */
+.rb-attach { position: absolute; left: 0; top: 0; pointer-events: none; border-radius: 12px; z-index: 9; }
+.rb-attach.is-card { outline: 2.5px solid rgba(45, 78, 143, 0.75); outline-offset: 3px; }
+.rb-attach.is-group { outline: 2px dashed rgba(45, 78, 143, 0.5); outline-offset: 6px; border-radius: 20px; background: rgba(45, 78, 143, 0.04); }
+.rb-pin {
+  position: absolute; left: 0; top: 0; width: 14px; height: 14px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff8a73, var(--rb-accent) 60%, #a52a15);
+  box-shadow: 0 2px 3px rgba(43, 39, 35, 0.4); pointer-events: none; z-index: 11;
+}
+
+.rb-list { font-family: var(--rb-sans); padding: 48px; background: var(--rb-paper); min-height: 100%; box-sizing: border-box; }
+.rb-list h1 { font-family: var(--rb-serif); }
+.rb-list a { display: block; padding: 8px 0; color: var(--rb-ink); }
+.rb-name { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.rb-name input { width: 280px; font: 15px var(--rb-sans); border: 1px solid var(--rb-line); border-radius: 6px; padding: 8px 10px; outline: none; }
+.rb-name input:focus { border-color: var(--rb-accent); }
+.rb-name button { font: 14px var(--rb-sans); padding: 7px 14px; border-radius: 6px; border: 1px solid transparent; background: var(--rb-marker, #2d4e8f); color: #fff; cursor: pointer; }
+.rb-name .rb-name-skip { background: none; color: var(--rb-muted); padding: 0; text-decoration: underline; }
+
+/* ================= sketch style ================= */
+
+@font-face { font-family: 'rb-hand'; src: url('/fonts/Shantell_Sans-Informal_Regular.woff2') format('woff2'); font-weight: 400; font-display: block; }
+@font-face { font-family: 'rb-hand'; src: url('/fonts/Shantell_Sans-Informal_Bold.woff2') format('woff2'); font-weight: 700; font-display: block; }
+
+.rb-sketch {
+  --rb-paper: #f4f1ea;
+  --rb-hand: 'rb-hand', 'Shantell Sans', 'Comic Neue', cursive;
+  --rb-pencil: rgba(59, 53, 48, 0.62);
+  --rb-marker: #2d4e8f;
+}
+
+/* Paper cards with a hand-drawn edge and a slight, seeded tilt. */
+.rb-sketch .rb-card {
+  position: relative;
+  transform: rotate(var(--rb-tilt, 0deg));
+  background: #fffdf7;
+  border: none;
+  border-radius: 3px;
+  overflow: visible;
+  box-shadow: 0 1px 1px rgba(43, 39, 35, 0.08), 3px 6px 14px -8px rgba(43, 39, 35, 0.35);
+}
+.rb-sketch .rb-card::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border: 1.5px solid var(--rb-pencil);
+  border-radius: 4px 7px 5px 8px / 7px 4px 8px 5px;
+  filter: url(#rb-rough);
+  pointer-events: none;
+}
+.rb-sketch .rb-card > * { position: relative; }
+.rb-sketch .rb-title {
+  font-family: var(--rb-hand);
+  font-size: 16px;
+  line-height: 21px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #2b2723;
+}
+.rb-sketch .rb-body { font-family: var(--rb-hand); font-size: 14px; line-height: 19px; color: #3e3832; }
+.rb-sketch .rb-gist { font-family: var(--rb-hand); font-size: 14px; line-height: 19px; color: #6a625a; }
+.rb-sketch .rb-kind-quote { border-left: none; background: #fffdf7; }
+.rb-sketch .rb-kind-quote .rb-quote-body { font-family: var(--rb-hand); font-style: normal; font-size: 18px; line-height: 24px; color: #24201c; }
+.rb-sketch .rb-kind-quote .rb-quote-body::before { content: '“'; color: var(--rb-accent); margin-right: 1px; }
+.rb-sketch .rb-kind-quote .rb-quote-body::after { content: '”'; color: var(--rb-accent); margin-left: 1px; }
+.rb-sketch .rb-head, .rb-sketch .rb-foot { color: #9a9188; }
+.rb-sketch .rb-n {
+  background: transparent;
+  border: 1.3px solid var(--rb-pencil);
+  border-radius: 50% 45% 55% 48%;
+  font-family: var(--rb-hand);
+  font-weight: 700;
+  color: #5e5750;
+  filter: url(#rb-rough);
+}
+
+
+/* Marker text written straight on the board. */
+.rb-prompt { box-sizing: border-box; padding: 8px 4px; font-family: var(--rb-serif); font-style: italic; color: #5e5750; }
+.rb-prompt-title { font-size: 20px; line-height: 26px; }
+.rb-prompt-body { margin-top: 6px; font-size: 15px; line-height: 22px; }
+.rb-sketch .rb-prompt { background: transparent; box-shadow: none; transform: rotate(calc(var(--rb-tilt, 0deg) * 0.5)); font-family: var(--rb-hand); font-style: normal; color: var(--rb-marker); }
+.rb-sketch .rb-prompt::before { display: none; }
+.rb-sketch .rb-prompt-title { font-size: 20px; line-height: 26px; font-weight: 700; }
+.rb-sketch .rb-prompt-body { font-size: 16px; line-height: 22px; }
+
+/* Cards are stuck up, not faded in. */
+@keyframes rb-drop {
+  0% { opacity: 0; transform: translateY(-22px) scale(1.06) rotate(calc(var(--rb-tilt, 0deg) + 4deg)); box-shadow: 8px 18px 26px -10px rgba(43, 39, 35, 0.35); }
+  65% { opacity: 1; transform: translateY(2px) scale(0.995) rotate(calc(var(--rb-tilt, 0deg) - 0.6deg)); }
+  100% { opacity: 1; transform: rotate(var(--rb-tilt, 0deg)); }
+}
+.rb-sketch .rb-enter { animation: rb-drop 520ms cubic-bezier(0.25, 0.8, 0.3, 1) both; }
+@keyframes rb-lift-away { to { opacity: 0; transform: translateY(-14px) rotate(calc(var(--rb-tilt, 0deg) + 5deg)) scale(1.03); } }
+.rb-sketch .rb-leaving { animation: rb-lift-away 260ms ease forwards; }
+
+/* Groups are loose pencil outlines; they firm up once the room names them. */
+.rb-sketch .rb-cluster { background: transparent; border: none; }
+.rb-sketch .rb-cluster::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1.6px dashed rgba(59, 53, 48, 0.22);
+  border-radius: 28px 40px 32px 46px / 40px 30px 44px 34px;
+  filter: url(#rb-rough-soft);
+  pointer-events: none;
+}
+.rb-sketch .rb-cluster.is-named::before { border-style: solid; border-color: rgba(59, 53, 48, 0.45); }
+.rb-sketch .rb-cluster-label { font-family: var(--rb-hand); font-style: normal; font-size: 19px; line-height: 24px; color: #3b3530; font-weight: 700; }
+.rb-sketch .rb-cluster-label.is-empty { color: rgba(59, 53, 48, 0.28); letter-spacing: 0.25em; font-weight: 400; }
+.rb-sketch .rb-cluster-input { font-family: var(--rb-hand); font-style: normal; font-size: 19px; }
+.rb-sketch .rb-cluster.is-zone::before { border: 2px dashed rgba(226, 69, 43, 0.55); }
+.rb-sketch .rb-cluster.is-zone { background: transparent; }
+.rb-sketch .is-zone .rb-cluster-label { font-family: var(--rb-hand); font-size: 20px; letter-spacing: 0.02em; text-transform: none; font-weight: 700; color: var(--rb-accent); }
+.rb-sketch .rb-board-title { font-family: var(--rb-hand); font-weight: 700; }
+.rb-card.rb-prompt { background: transparent; border: none; box-shadow: none; padding: 8px 4px; }

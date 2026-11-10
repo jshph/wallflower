@@ -1,0 +1,45 @@
+{
+  "name": "roomboard",
+  "version": "0.1.0",
+  "description": "A shared whiteboard an agent fills before a meeting and reads back afterwards",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "whiteboard",
+    "tldraw",
+    "agents",
+    "meetings",
+    "facilitation"
+  ],
+  "bin": {
+    "roomboard": "./bin/board.mjs",
+    "board": "./bin/board.mjs"
+  },
+  "files": [
+    "bin",
+    "server",
+    "dist",
+    "examples",
+    "skill"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "node bin/board.mjs serve",
+    "build": "vite build",
+    "prepack": "vite build",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.22.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.2.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tldraw": "3.15.6",
+    "vite": "^8.3.6"
+  }
+}

@@ -12,7 +12,7 @@ wallflower new "Pick the next thing to build"        # makes a board on board.by
 wallflower put "$(npm root -g)/wallflower-board/examples/plan.json"
 ```
 
-Open the printed link, move some cards, add stickies (press `n`, then click), then run `wallflower diff` to see the read-back. Run `wallflower` with no arguments for the full CLI and the plan format.
+Open the printed link, move some cards, add stickies (press `n`, then click), then run `wallflower diff` to see the read-back. Run `wallflower` with no arguments for the full CLI and the plan format. Without a global install, `npx wallflower-board` works in place of `wallflower`.
 
 ### On board.byenzyme.com
 
@@ -27,6 +27,7 @@ To keep a board on your own machine instead, run `wallflower serve` in another t
 `skill/wallflower/SKILL.md` teaches an agent the whole loop: deciding what the board is for, gathering material, writing the plan, taking another pass when someone presses **Take another pass**, and reading back what people did. Copy or link the `skill/wallflower` folder into your agent's skills directory. For Claude Code, with the npm package installed:
 
 ```bash
+mkdir -p ~/.claude/skills
 ln -s "$(npm root -g)/wallflower-board/skill/wallflower" ~/.claude/skills/wallflower
 ```
 
@@ -37,7 +38,7 @@ Gathering material is the agent's job, with whatever search tools it has.
 ```bash
 npm install
 npm run dev            # board server :8787 (watch mode) + Vite UI with hot reload :5173
-npm test               # layout and its checks, text sizing, copy budgets, read-back diff, hosted mode
+npm test               # layout and its checks, text sizing, copy budgets, read-back diff, CLI, hosted and public servers
 npm run build          # builds the UI into dist/, which `wallflower serve` serves
 ```
 
@@ -45,7 +46,7 @@ npm run build          # builds the UI into dist/, which `wallflower serve` serv
 - Layout (`server/arrange.mjs`): until a person touches a board, each `put` lays the whole board out again from the agent's placements. A card plus the cards tucked onto or ringed around it is one unit, units pack into groups, groups and their edge cards fill a grid, so nothing overlaps and groups are as big as what they hold. After that, whatever a person placed is pinned: new cards go in locally, groups grow to hold them, and only the agent's untouched groups are pushed apart. `put` then checks the board (groups overlapping or too close, cards reading as in the wrong group, cards covering each other, clipped titles, text the browser reports as cut off) and reports problems by id.
 - Card text is sized with the handwriting font's real glyph widths (`server/text.mjs`, `server/font-metrics.json`); regenerate the widths with `node scripts/measure-font.mjs` if the font changes.
 - `src/`: the tldraw client. It has four card kinds (quote, note, prompt, sticky) in one hand-drawn style, groups that carry their cards, a reader that opens the source passage behind a card (cut by `wallflower put` from `source.file`), fade-in for agent writes, animated remote moves, and an agent cursor.
-- `bin/wallflower.mjs`: the agent interface: `serve`, `new`, `put`, `view`, `diff`, `wait`, `url`, `share`, `list`, `use`. `wait` blocks until someone presses **Take another pass** on the board, then prints that round (`server/round.mjs`): people's stickies and moves in their computed neighborhoods, with the source files nearby.
+- `bin/wallflower.mjs`: the agent interface: `serve`, `new`, `put`, `view`, `diff`, `wait`, `url`, `share`, `delete`, `server`, `list`, `use`. `wait` blocks until someone presses **Take another pass** on the board, then prints that round (`server/round.mjs`): people's stickies and moves in their computed neighborhoods, with the source files nearby.
 - Boards live in `~/.wallflower/data/boards/<id>/` as `state.json`, `events.jsonl`, and `snapshots/`.
 
 ## Settings

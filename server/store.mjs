@@ -14,8 +14,10 @@ const MOVE_COALESCE_MS = 2500
 const VALID_ID = /^[\w-]{1,64}$/
 
 export class BoardStore {
-  constructor(dataDir) {
+  // Limits keep one board from growing without bound; a real board uses a few dozen cards.
+  constructor(dataDir, { maxCards = 500, maxGroups = 100 } = {}) {
     this.dataDir = dataDir
+    this.limits = { cards: maxCards, groups: maxGroups }
     this.boards = new Map()
     fs.mkdirSync(path.join(dataDir, 'boards'), { recursive: true })
   }
@@ -60,6 +62,30 @@ export class BoardStore {
     this.save(board)
     this.log(board, actor, { op: 'board.create', title })
     return board
+  }
+
+  // Who may delete a board, and whether it was made by the public (and so expires when idle).
+  // Boards from before this file existed have none: only the server's token can delete them.
+  owner(id) {
+    try { return JSON.parse(fs.readFileSync(path.join(this.dir(id), 'owner.json'), 'utf8')) } catch { return null }
+  }
+
+  setOwner(id, owner) {
+    fs.writeFileSync(path.join(this.dir(id), 'owner.json'), JSON.stringify(owner, null, 2))
+  }
+
+  // When anything last happened on the board: its state or its log changing.
+  lastActive(id) {
+    let t = 0
+    for (const f of ['state.json', 'events.jsonl']) t = Math.max(t, fs.statSync(path.join(this.dir(id), f), { throwIfNoEntry: false })?.mtimeMs ?? 0)
+    return t
+  }
+
+  remove(id) {
+    if (!this.get(id)) return false
+    fs.rmSync(this.dir(id), { recursive: true, force: true })
+    this.boards.delete(id)
+    return true
   }
 
   save(board) {
@@ -131,6 +157,9 @@ export class BoardStore {
   apply(id, ops, actor, { staggerMs = 0, defer = false } = {}) {
     const board = this.get(id)
     if (!board) throw new Error(`board ${id} not found`)
+    const adding = (op, have) => new Set(ops.filter((o) => o?.op === op && !have[o.id]).map((o) => o.id)).size
+    if (Object.keys(board.cards).length + adding('card.upsert', board.cards) > this.limits.cards) throw Object.assign(new Error(`a board holds at most ${this.limits.cards} cards`), { status: 413 })
+    if (Object.keys(board.clusters).length + adding('cluster.upsert', board.clusters) > this.limits.groups) throw Object.assign(new Error(`a board holds at most ${this.limits.groups} groups`), { status: 413 })
     // The agent's proposal is whatever the board looked like just before a person first touched it.
     if (actor.startsWith('human:')) {
       if (!this.getSnapshot(id, PROPOSED)) this.snapshot(id, PROPOSED, board.createdBy)

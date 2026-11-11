@@ -33,6 +33,57 @@ function hasToken(req) {
   return !!m && crypto.timingSafeEqual(digest(m[1]), digest(TOKEN))
 }
 
+// A public server: with WALLFLOWER_PUBLIC=1 on a hosted server, anyone can create a board without
+// the token. Listing every board still needs it. Public boards are rate-limited at creation and,
+// with WALLFLOWER_RETAIN_DAYS set, deleted once nobody has touched them for that many days.
+const PUBLIC = !!TOKEN && /^(1|true|yes)$/i.test(env('PUBLIC') ?? '')
+const RETAIN_DAYS = Number(env('RETAIN_DAYS')) || 0
+const PER_HOUR = Number(env('CREATE_PER_HOUR')) || 20 // per client address
+const PER_HOUR_ALL = Number(env('CREATE_PER_HOUR_ALL')) || 300 // across everyone
+// Behind a proxy, the client's address comes from a header the proxy sets (e.g. x-real-ip).
+// For x-forwarded-for, the last entry is the one the nearest proxy added.
+const CLIENT_IP_HEADER = (env('CLIENT_IP_HEADER') ?? '').toLowerCase()
+function clientAddr(req) {
+  const h = CLIENT_IP_HEADER && req.headers[CLIENT_IP_HEADER]
+  return (h ? String(h).split(',').at(-1).trim() : '') || req.socket.remoteAddress || 'unknown'
+}
+const created = [] // [time, address] of public creations in the last hour
+function overCreateLimit(addr) {
+  const hourAgo = Date.now() - 3600_000
+  while (created.length && created[0][0] < hourAgo) created.shift()
+  if (created.length >= PER_HOUR_ALL) return 'this server has made too many boards in the last hour; try again later'
+  if (created.filter(([, a]) => a === addr).length >= PER_HOUR) return `at most ${PER_HOUR} new boards an hour from one address; try again later`
+  return null
+}
+
+// Deleting a board takes the server's token or the key handed back when the board was created.
+function canDelete(req, id) {
+  if (hasToken(req)) return true // a local server without a token trusts everyone who can reach it
+  const key = req.headers['x-owner-key']
+  const owner = store.owner(id)
+  return !!(key && owner?.keyHash) && crypto.timingSafeEqual(digest(String(key)), Buffer.from(owner.keyHash, 'hex'))
+}
+
+function dropBoard(id) {
+  for (const ws of sockets.get(id) ?? []) ws.close(4004, 'board deleted')
+  sockets.delete(id)
+  for (const w of waiters.get(id) ?? []) { clearTimeout(w.timer); send(w.res, 404, { error: `board ${id} was deleted` }) }
+  waiters.delete(id)
+  presence.delete(id)
+  store.remove(id)
+}
+
+// Public boards nobody has touched in RETAIN_DAYS are deleted; boards made with the token are kept.
+function sweep() {
+  if (!RETAIN_DAYS) return
+  const cutoff = Date.now() - RETAIN_DAYS * 86400_000
+  for (const id of store.list()) {
+    if (!store.owner(id)?.public || sockets.get(id)?.size || store.lastActive(id) > cutoff) continue
+    dropBoard(id)
+    console.log(`deleted board ${id}: idle for more than ${RETAIN_DAYS} days`)
+  }
+}
+
 // There is no login, so only answer requests addressed to a loopback name or a host listed in
 // WALLFLOWER_ALLOWED_HOSTS (comma-separated; ".example.com" matches subdomains, "all" matches
 // anything). Checking Host blocks DNS rebinding; checking Origin stops other sites' pages,
@@ -146,16 +197,22 @@ const server = http.createServer(async (req, res) => {
     const parts = url.pathname.split('/').filter(Boolean)
     if (parts[0] !== 'api') return req.method === 'GET' ? serveStatic(res, url.pathname) : send(res, 404, { error: 'not found' })
     // hosted: board links work for anyone who has them, so the CLI can say a link is safe to share.
-    if (parts[1] === 'info' && parts.length === 2) return send(res, 200, { ui: UI, hosted: !!TOKEN })
+    if (parts[1] === 'info' && parts.length === 2) return send(res, 200, { ui: UI, hosted: !!TOKEN, public: PUBLIC, retainDays: PUBLIC ? RETAIN_DAYS || null : null })
 
     if (parts[1] === 'boards' && parts.length === 2) {
-      if (!hasToken(req)) return send(res, 401, { error: 'this server needs WALLFLOWER_TOKEN to list or create boards; open a board by its link' })
+      const authed = hasToken(req)
+      if (!authed && !(PUBLIC && req.method === 'POST')) return send(res, 401, { error: PUBLIC ? 'this server needs WALLFLOWER_TOKEN to list boards; open a board by its link' : 'this server needs WALLFLOWER_TOKEN to list or create boards; open a board by its link' })
       if (req.method === 'GET') return send(res, 200, store.list().map((id) => { const b = store.get(id); return { id, title: b.title, cards: Object.keys(b.cards).length, rev: b.rev } }))
       if (req.method === 'POST') {
         const { id: wanted, ...rest } = await body(req)
         if (TOKEN && wanted) return send(res, 400, { error: 'custom board ids are off on a hosted server, so links stay unguessable' })
+        const addr = clientAddr(req)
+        if (!authed) { const over = overCreateLimit(addr); if (over) return send(res, 429, { error: over }) }
         const b = store.create({ ...rest, id: TOKEN ? crypto.randomBytes(18).toString('base64url') : wanted }, actor)
-        return send(res, 201, { id: b.id, title: b.title })
+        const ownerKey = crypto.randomBytes(18).toString('base64url')
+        store.setOwner(b.id, { keyHash: digest(ownerKey).toString('hex'), public: !authed, createdAt: b.createdAt })
+        if (!authed) { created.push([Date.now(), addr]); console.log(`public board created (${created.length} this hour)`) }
+        return send(res, 201, { id: b.id, title: b.title, ownerKey })
       }
     }
     const id = parts[2]
@@ -164,6 +221,11 @@ const server = http.createServer(async (req, res) => {
     const sub = parts[3]
 
     if (!sub && req.method === 'GET') return send(res, 200, board)
+    if (!sub && req.method === 'DELETE') {
+      if (!canDelete(req, id)) return send(res, 403, { error: 'only whoever created this board (or the server token) can delete it' })
+      dropBoard(id)
+      return send(res, 200, { deleted: id })
+    }
     if (sub === 'view') {
       const f = url.searchParams.get('format') ?? 'both'
       if (f === 'json') return send(res, 200, board)
@@ -242,4 +304,5 @@ wss.on('connection', (ws, req) => {
   })
 })
 
-server.listen(PORT, HOST, () => console.log(`wallflower server on http://${HOST.includes(':') ? `[${HOST}]` : HOST}:${PORT}, boards at ${UI}${TOKEN ? ' (hosted: token required to list or create boards)' : ''}`))
+server.listen(PORT, HOST, () => console.log(`wallflower server on http://${HOST.includes(':') ? `[${HOST}]` : HOST}:${PORT}, boards at ${UI}${PUBLIC ? ` (public: anyone can create boards${RETAIN_DAYS ? `; idle public boards deleted after ${RETAIN_DAYS} days` : ''})` : TOKEN ? ' (hosted: token required to list or create boards)' : ''}`))
+if (RETAIN_DAYS) { sweep(); setInterval(sweep, 3600_000).unref() }

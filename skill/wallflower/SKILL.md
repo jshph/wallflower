@@ -9,13 +9,15 @@ AI does the prep, and the room does the thinking. Your job is to set what the co
 
 ## Setup
 
-`wallflower` (or its short form `wf`) comes from the `wallflower-board` npm package: `npm install -g wallflower-board`, or prefix commands with `npx wallflower-board` in place of `wallflower`. Run `wallflower list` first. If it can't reach the server, start it in the background:
+`wallflower` (or its short form `wf`) comes from the `wallflower-board` npm package: `npm install -g wallflower-board`, or prefix commands with `npx wallflower-board` in place of `wallflower`. Boards go to the public server at board.byenzyme.com unless the user has set up another (`wallflower server` says which). Nothing needs starting.
+
+For a board on this machine (`--server local`), start the local server in the background first:
 
 ```bash
 (nohup wallflower serve > /tmp/wallflower.log 2>&1 &)
 ```
 
-In a checkout of the repo, `npm run dev` runs the server with a live-reloading UI instead.
+In a checkout of the repo, `npm run dev` runs the local server with a live-reloading UI instead.
 
 The whole interface:
 
@@ -27,10 +29,12 @@ wallflower diff                      what people changed since they first touche
 wallflower wait [--timeout SECONDS]  block until someone presses "Take another pass"; prints that round
 wallflower url [--name Name]         the URL to hand over, with the user's name in it
 wallflower share                     the link for other people; says on stderr whether they can reach it
+wallflower delete [id]               delete a board you created, for everyone
+wallflower server                    which server new boards go to
 wallflower list | wallflower use <id>
 ```
 
-`wallflower url` prints where the board opens. A local server only answers on this machine; don't expose it yourself. If the user has a shared server, it is usually the default already (in `~/.config/wallflower/config.env`, or `WALLFLOWER_URL` and `WALLFLOWER_TOKEN`); `wallflower server` says which server you're on. `--server <url>` points any command elsewhere, and `--server local` at this machine: use it for a board only the user will see that holds private material, unless they've said otherwise. Pass it to `wallflower new` or `wallflower use`; later commands on that board stay on its server without it. A hosted board's link is its only key: anyone holding it can edit and read the board, so hand it only to the people who should be in the room, and don't paste it anywhere public. To work on a board someone else created, take the id from its link (`?board=<id>`) and run `wallflower use <id>`; no token needed.
+`wallflower url` prints where the board opens. A local server only answers on this machine; don't expose it yourself. New boards go to board.byenzyme.com, or to the user's own server if they've set one up (in `~/.config/wallflower/config.env`, or `WALLFLOWER_URL` and `WALLFLOWER_TOKEN`); `wallflower server` says which. Boards on board.byenzyme.com are deleted after 90 days without activity. `--server <url>` points any command elsewhere, and `--server local` at this machine: use it for a board only the user will see that holds private material, unless they've said otherwise. Pass it to `wallflower new` or `wallflower use`; later commands on that board stay on its server without it. A hosted board's link is its only key: anyone holding it can edit and read the board, so hand it only to the people who should be in the room, and don't paste it anywhere public. To work on a board someone else created, take the id from its link (`?board=<id>`) and run `wallflower use <id>`; no token needed.
 
 ## 0. Decide what the board is for
 

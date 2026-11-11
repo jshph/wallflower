@@ -309,7 +309,9 @@ function TopBar({ editor, status }) {
 function BoardList({ name }) {
   // null while loading, 'private' when the server is hosted and doesn't list its boards.
   const [boards, setBoards] = useState(null)
+  const [open, setOpen] = useState(false) // a public server: anyone can make boards here
   useEffect(() => {
+    fetch('/api/info').then((r) => r.json()).then((i) => setOpen(!!i.public), () => {})
     fetch('/api/boards')
       .then((r) => (r.status === 401 ? 'private' : r.ok ? r.json() : Promise.reject(new Error(r.statusText))))
       .then(setBoards, () => setBoards('error'))
@@ -320,6 +322,7 @@ function BoardList({ name }) {
       {Array.isArray(boards) && boards.map((b) => <a key={b.id} href={`?board=${b.id}${name ? `&name=${encodeURIComponent(name)}` : ''}`}>{b.title} <small>{b.cards} cards</small></a>)}
       {Array.isArray(boards) && !boards.length && <p>No boards yet. Create one with <code>wallflower new "Title"</code></p>}
       {boards === 'private' && <p>Boards here are private. Open one from the link you were given.</p>}
+      {boards === 'private' && open && <p>To make one, have your agent run <code>npx wallflower-board new "Title"</code>. See <a href="https://github.com/jshph/wallflower">github.com/jshph/wallflower</a>.</p>}
       {boards === 'error' && <p>Couldn't reach the board server.</p>}
     </div>
   )

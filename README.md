@@ -2,23 +2,25 @@
 
 A shared tldraw whiteboard that an agent fills with what's worth discussing before a meeting, and helps flesh out as the ideas on the board evolve.
 
-Wallflower publishes whiteboards to byenzyme.com so you can share boards with other people. You can also run it locally for your own use, or deploy your own copy (see [Run a shared server](#run-a-shared-server)).
+Wallflower publishes whiteboards to [board.byenzyme.com](https://board.byenzyme.com) so you can share boards with other people. No account: a board's link is its key. You can also run it locally for your own use (`--server local`), or deploy your own copy (see [Run a shared server](#run-a-shared-server)).
 
 ## Use it
 
 ```bash
 npm install -g wallflower-board   # installs `wallflower`, and `wf` for short
-wallflower serve                  # board server and UI on http://localhost:8787
-```
-
-In another terminal, try the example plan:
-
-```bash
-wallflower new "Pick the next thing to build"        # prints the board URL
+wallflower new "Pick the next thing to build"        # makes a board on board.byenzyme.com; prints its link
 wallflower put "$(npm root -g)/wallflower-board/examples/plan.json"
 ```
 
-Open the printed URL, move some cards, add stickies (press `n`, then click), then run `wallflower diff` to see the read-back. Run `wallflower` with no arguments for the full CLI and the plan format.
+Open the printed link, move some cards, add stickies (press `n`, then click), then run `wallflower diff` to see the read-back. Run `wallflower` with no arguments for the full CLI and the plan format.
+
+### On board.byenzyme.com
+
+- Anyone with a board's link can view it, edit it, and read it back with the CLI. Send links only to the people who should be in the room.
+- Boards are deleted after 90 days with no activity. `wallflower delete` deletes one sooner; only the machine that created it can, since `wallflower new` keeps the board's key in `~/.wallflower/keys/`.
+- Limits: 20 new boards an hour from one address, 500 cards and 100 groups on a board.
+
+To keep a board on your own machine instead, run `wallflower serve` in another terminal and add `--server local` to `wallflower new`.
 
 ### With an agent
 
@@ -58,8 +60,13 @@ All optional, as environment variables. The older `ROOMBOARD_*` names still work
 | `WALLFLOWER_HOST` | `127.0.0.1` | interface both servers listen on |
 | `WALLFLOWER_ALLOWED_HOSTS` | none | extra hostnames to accept, comma-separated; `.example.com` matches subdomains, `all` matches anything |
 | `WALLFLOWER_TOKEN` | none | turns on hosted mode for a shared server (below); the CLI sends it too |
+| `WALLFLOWER_PUBLIC` | off | with a token set, `1` lets anyone create boards (below) |
+| `WALLFLOWER_RETAIN_DAYS` | keep forever | delete boards the public created once idle this many days |
+| `WALLFLOWER_CREATE_PER_HOUR` | `20` | public boards one address may create in an hour |
+| `WALLFLOWER_CREATE_PER_HOUR_ALL` | `300` | public boards everyone together may create in an hour |
+| `WALLFLOWER_CLIENT_IP_HEADER` | none | behind a proxy, the header carrying the client's address (e.g. `x-real-ip`) |
 | `VITE_TLDRAW_LICENSE_KEY` | none | a tldraw business license key, read at build time; not needed (see License) |
-| `WALLFLOWER_URL` | from the config file, else `http://127.0.0.1:8787` | where the CLI finds the server; `--server` overrides it per command |
+| `WALLFLOWER_URL` | from the config file, else `https://board.byenzyme.com` | where the CLI finds the server; `--server` overrides it per command |
 | `WALLFLOWER_CONFIG` | `~/.config/wallflower/config.env` | the CLI's config file (below) |
 | `WALLFLOWER_UI` | asked from the server | base URL the CLI prints for boards |
 | `WALLFLOWER_ACTOR` | `agent:<username>` | who the CLI writes as |
@@ -73,7 +80,10 @@ To share boards with people elsewhere, deploy your own server with `WALLFLOWER_T
 
 - A board's link is its key. New boards get random 24-character ids (144 bits), and anyone holding a board's link can view it, edit it, and read it back with the CLI. Nobody can find a board without its link.
 - The token is needed only to list all boards and to create boards. Custom `--id`s are refused, so ids stay unguessable.
-- Request bodies and socket messages are capped at 1 MB.
+- Request bodies and socket messages are capped at 1 MB, and a board holds at most 500 cards and 100 groups.
+- `wallflower delete` deletes a board, given the key its creator's CLI kept, or the token.
+
+**A public server.** Add `WALLFLOWER_PUBLIC=1` and anyone can create boards without the token, the way board.byenzyme.com runs. Listing every board still needs the token. Creation is rate-limited per address and overall; set `WALLFLOWER_CLIENT_IP_HEADER` to the header your proxy puts the client's address in, or every visitor shares the proxy's address. Set `WALLFLOWER_RETAIN_DAYS` so boards people forget about don't pile up; boards made with the token are never expired.
 
 ### Deploy
 

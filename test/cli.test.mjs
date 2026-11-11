@@ -36,7 +36,7 @@ async function recorder() {
 
 test('cli: server comes from --server, then WALLFLOWER_URL, then the config file, then this machine', async () => {
   const config = 'WALLFLOWER_URL=https://board.example.com\nWALLFLOWER_TOKEN="secret"\n'
-  assert.equal((await run(['server'])).stdout, 'http://127.0.0.1:8787')
+  assert.equal((await run(['server'])).stdout, 'https://board.byenzyme.com', 'the public server by default')
   let r = await run(['server'], { config })
   assert.equal(r.stdout, 'https://board.example.com')
   assert.match(r.stderr, /config\.env, with a token/)

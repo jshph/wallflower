@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url'
 import { cutPassage } from '../server/passage.mjs'
 
 const CURRENT = path.join(homeDir(), 'current')
+// The key a server hands back when it creates a board; deleting the board takes it.
+const KEYS = path.join(homeDir(), 'keys')
 
 // The config file gives this machine a default server, e.g. a shared one your agents should use.
 // Only the CLI reads it; `wallflower serve` never does. Same KEY=value lines as the environment.
@@ -34,6 +36,8 @@ const serverAt = argv.indexOf('--server')
 const serverFlag = serverAt >= 0 ? argv.splice(serverAt, 2)[1] : undefined
 if (serverAt >= 0 && !serverFlag) die('--server needs a URL, or "local"')
 const LOCAL = `http://127.0.0.1:${env('PORT') ?? 8787}`
+// The public server anyone can make boards on. Self-hosters point the config file elsewhere.
+const PUBLIC_SERVER = 'https://board.byenzyme.com'
 const norm = (u) => u.trim().replace(/\/+$/, '')
 const sources = [
   { from: 'WALLFLOWER_URL', url: env('URL'), token: env('TOKEN'), ui: env('UI') },
@@ -42,10 +46,11 @@ const sources = [
 // The current board is saved as its id and, on the next line, the server it lives on.
 const saved = (() => { try { const [id, server] = fs.readFileSync(CURRENT, 'utf8').trim().split('\n'); return { id, server } } catch { return {} } })()
 const ON_BOARD = new Set(['put', 'view', 'diff', 'wait', 'url', 'share'])
-const boardServer = ON_BOARD.has(argv[0]) && !env('BOARD') && saved.server ? { from: `the current board (${saved.id})`, url: saved.server } : null
+const onCurrent = ON_BOARD.has(argv[0]) || (argv[0] === 'delete' && (!argv[1] || argv[1] === saved.id))
+const boardServer = onCurrent && !env('BOARD') && saved.server ? { from: `the current board (${saved.id})`, url: saved.server } : null
 const chosen = serverFlag
   ? { from: '--server', url: serverFlag === 'local' ? LOCAL : serverFlag }
-  : (env('URL') && sources[0]) || boardServer || sources.find((s) => s.url) || { from: 'the default', url: LOCAL }
+  : (env('URL') && sources[0]) || boardServer || sources.find((s) => s.url) || { from: 'the default', url: PUBLIC_SERVER }
 const SERVER = norm(chosen.url)
 const paired = sources.find((s) => s.url && norm(s.url) === SERVER)
 // A token or UI in the environment without WALLFLOWER_URL goes with a server on this machine.
@@ -55,7 +60,7 @@ const UI = paired?.ui ?? (bare ? env('UI') : undefined)
 
 const HELP = `wallflower (or wf): put cards on a shared board, then read back what people did
 
-  wallflower serve                     run the board server and UI (default http://localhost:8787)
+  wallflower serve                     run your own board server and UI (default http://localhost:8787)
   wallflower new "Title" [--id ID]     create a board and make it current; prints its URL (hosted servers pick the id)
   wallflower put plan.json|-           add or update groups and cards; prints the layout, then warnings and layout problems
   wallflower view                      the board as text: layout map, then every card with its position
@@ -65,12 +70,15 @@ const HELP = `wallflower (or wf): put cards on a shared board, then read back wh
                                   removals, and any note. Exits 2 if the timeout passes first.
   wallflower url [--name Name]         the board's URL, with a name for whoever opens it
   wallflower share                     the link to send to other people, and whether they can reach it
+  wallflower delete [id]               delete a board you created (default: the current one), for everyone
   wallflower list | wallflower use <id>
   wallflower server                    which server new boards go to, and where that setting came from
 
-Any command takes --server URL to talk to another server, or --server local for one on this machine.
-Without it: WALLFLOWER_URL, else (for commands on the current board) the server that board is on, else
-the config file (~/.config/wallflower/config.env, or WALLFLOWER_CONFIG), else http://127.0.0.1:8787.
+Boards go to the public server at https://board.byenzyme.com unless you say otherwise.
+Any command takes --server URL to talk to another server, or --server local for one on this machine
+(start it with \`wallflower serve\`). Without it: WALLFLOWER_URL, else (for commands on the current board)
+the server that board is on, else the config file (~/.config/wallflower/config.env, or WALLFLOWER_CONFIG),
+else the public server.
 The config file holds WALLFLOWER_URL and WALLFLOWER_TOKEN lines; a token is only sent to the server it
 was set for.
 
@@ -113,10 +121,10 @@ function setCurrent(id) {
   fs.writeFileSync(CURRENT, `${id}\n${SERVER}\n`)
 }
 
-async function api(method, p, data) {
+async function api(method, p, data, extra = {}) {
   let res
   try {
-    const headers = { 'content-type': 'application/json', 'x-actor': actor }
+    const headers = { 'content-type': 'application/json', 'x-actor': actor, ...extra }
     // A hosted server wants its token to list or create boards; per-board calls need only the id.
     if (TOKEN) headers.authorization = `Bearer ${TOKEN}`
     res = await fetch(SERVER + p, { method, headers, body: data ? JSON.stringify(data) : undefined })
@@ -143,7 +151,8 @@ async function ui() {
 
 // Whether the link just printed can go to other people. On stderr, so stdout stays just the id and URL.
 async function shareNote() {
-  if ((await info()).hosted) console.error('Anyone with this link can view, edit, and read back the board. Send it only to the people who should be in the room.')
+  const i = await info()
+  if (i.hosted) console.error(`Anyone with this link can view, edit, and read back the board. Send it only to the people who should be in the room.${i.retainDays ? ` Boards here are deleted after ${i.retainDays} days without activity; \`wallflower delete\` removes it sooner.` : ''}`)
   else console.error('This is a local server, so the link only opens on this machine (unless you put the server behind a tunnel). To share a board with other people, create it on a shared server: pass --server, or set WALLFLOWER_URL and WALLFLOWER_TOKEN (in the environment or the config file).')
 }
 
@@ -180,6 +189,7 @@ switch (cmd) {
     break
   case 'new': {
     const r = await api('POST', '/api/boards', { id: flag('id'), title: args.join(' ') || undefined })
+    if (r.ownerKey) { fs.mkdirSync(KEYS, { recursive: true, mode: 0o700 }); fs.writeFileSync(path.join(KEYS, r.id), r.ownerKey, { mode: 0o600 }) }
     setCurrent(r.id)
     console.log(`${r.id}\n${await ui()}/?board=${r.id}`)
     await shareNote()
@@ -245,6 +255,16 @@ switch (cmd) {
     console.error(`from ${chosen.from}${TOKEN ? ', with a token' : ''}`)
     if (saved.id && saved.server && norm(saved.server) !== SERVER && !serverFlag && !env('URL')) console.error(`the current board, ${saved.id}, is on ${saved.server}`)
     break
+  case 'delete': {
+    const id = args[0] ?? current()
+    let key
+    try { key = fs.readFileSync(path.join(KEYS, id), 'utf8').trim() } catch {}
+    await api('DELETE', `/api/boards/${id}`, undefined, key ? { 'x-owner-key': key } : {})
+    fs.rmSync(path.join(KEYS, id), { force: true })
+    if (saved.id === id) fs.rmSync(CURRENT, { force: true })
+    console.log(`deleted ${id}`)
+    break
+  }
   case 'use':
     if (!args[0]) die('wallflower use <id>')
     setCurrent(args[0])

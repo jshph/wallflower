@@ -8,8 +8,50 @@ import { env, homeDir } from '../server/env.mjs'
 import { fileURLToPath } from 'node:url'
 import { cutPassage } from '../server/passage.mjs'
 
-const SERVER = env('URL') ?? `http://127.0.0.1:${env('PORT') ?? 8787}`
 const CURRENT = path.join(homeDir(), 'current')
+
+// The config file gives this machine a default server, e.g. a shared one your agents should use.
+// Only the CLI reads it; `wallflower serve` never does. Same KEY=value lines as the environment.
+const CONFIG = env('CONFIG') ?? path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'wallflower', 'config.env')
+function readConfig() {
+  let text
+  try { text = fs.readFileSync(CONFIG, 'utf8') } catch { return {} }
+  const out = {}
+  for (const line of text.split('\n')) {
+    const m = line.match(/^\s*(?:export\s+)?(?:WALLFLOWER|ROOMBOARD)_([A-Z_]+)\s*=\s*(.*?)\s*$/)
+    if (m) out[m[1]] ??= m[2].replace(/^(['"])(.*)\1$/, '$2')
+  }
+  return out
+}
+const config = readConfig()
+
+// Which server: --server URL (or "local"), else WALLFLOWER_URL, else (for commands on the current
+// board) the server that board was made or chosen on, else the config file, else this machine.
+// A token or UI address is used only with the server it was set for, so a token set for one server
+// is never sent to another.
+const argv = process.argv.slice(2)
+const serverAt = argv.indexOf('--server')
+const serverFlag = serverAt >= 0 ? argv.splice(serverAt, 2)[1] : undefined
+if (serverAt >= 0 && !serverFlag) die('--server needs a URL, or "local"')
+const LOCAL = `http://127.0.0.1:${env('PORT') ?? 8787}`
+const norm = (u) => u.trim().replace(/\/+$/, '')
+const sources = [
+  { from: 'WALLFLOWER_URL', url: env('URL'), token: env('TOKEN'), ui: env('UI') },
+  { from: CONFIG.replace(os.homedir(), '~'), url: config.URL, token: config.TOKEN, ui: config.UI },
+]
+// The current board is saved as its id and, on the next line, the server it lives on.
+const saved = (() => { try { const [id, server] = fs.readFileSync(CURRENT, 'utf8').trim().split('\n'); return { id, server } } catch { return {} } })()
+const ON_BOARD = new Set(['put', 'view', 'diff', 'wait', 'url', 'share'])
+const boardServer = ON_BOARD.has(argv[0]) && !env('BOARD') && saved.server ? { from: `the current board (${saved.id})`, url: saved.server } : null
+const chosen = serverFlag
+  ? { from: '--server', url: serverFlag === 'local' ? LOCAL : serverFlag }
+  : (env('URL') && sources[0]) || boardServer || sources.find((s) => s.url) || { from: 'the default', url: LOCAL }
+const SERVER = norm(chosen.url)
+const paired = sources.find((s) => s.url && norm(s.url) === SERVER)
+// A token or UI in the environment without WALLFLOWER_URL goes with a server on this machine.
+const bare = !env('URL') && SERVER === norm(LOCAL)
+const TOKEN = paired?.token ?? (bare ? env('TOKEN') : undefined)
+const UI = paired?.ui ?? (bare ? env('UI') : undefined)
 
 const HELP = `wallflower (or wf): put cards on a shared board, then read back what people did
 
@@ -24,6 +66,13 @@ const HELP = `wallflower (or wf): put cards on a shared board, then read back wh
   wallflower url [--name Name]         the board's URL, with a name for whoever opens it
   wallflower share                     the link to send to other people, and whether they can reach it
   wallflower list | wallflower use <id>
+  wallflower server                    which server new boards go to, and where that setting came from
+
+Any command takes --server URL to talk to another server, or --server local for one on this machine.
+Without it: WALLFLOWER_URL, else (for commands on the current board) the server that board is on, else
+the config file (~/.config/wallflower/config.env, or WALLFLOWER_CONFIG), else http://127.0.0.1:8787.
+The config file holds WALLFLOWER_URL and WALLFLOWER_TOKEN lines; a token is only sent to the server it
+was set for.
 
 Plan (every field optional except ids; plans can be partial):
   { "title": "…",
@@ -48,20 +97,20 @@ function die(msg) {
   process.exit(1)
 }
 
-const args = process.argv.slice(2)
+const args = argv
 const cmd = args.shift()
 const flag = (name) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args.splice(i, 2)[1] : undefined }
 const actor = env('ACTOR') ?? (process.env.BB_THREAD_ID ? `agent:${process.env.BB_THREAD_ID}` : `agent:${os.userInfo().username}`)
 
 function current() {
-  const id = env('BOARD') ?? (fs.existsSync(CURRENT) ? fs.readFileSync(CURRENT, 'utf8').trim() : null)
+  const id = env('BOARD') ?? saved.id
   if (!id) die('no board selected: run `wallflower new "Title"` or `wallflower use <id>`')
   return id
 }
 
 function setCurrent(id) {
   fs.mkdirSync(path.dirname(CURRENT), { recursive: true })
-  fs.writeFileSync(CURRENT, id)
+  fs.writeFileSync(CURRENT, `${id}\n${SERVER}\n`)
 }
 
 async function api(method, p, data) {
@@ -69,13 +118,13 @@ async function api(method, p, data) {
   try {
     const headers = { 'content-type': 'application/json', 'x-actor': actor }
     // A hosted server wants its token to list or create boards; per-board calls need only the id.
-    if (env('TOKEN')) headers.authorization = `Bearer ${env('TOKEN')}`
+    if (TOKEN) headers.authorization = `Bearer ${TOKEN}`
     res = await fetch(SERVER + p, { method, headers, body: data ? JSON.stringify(data) : undefined })
   } catch {
     const local = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(SERVER)
     die(local
       ? `cannot reach the Wallflower server at ${SERVER}; start it with \`wallflower serve\` (or \`npm run dev\` in a checkout)`
-      : `cannot reach the Wallflower server at ${SERVER}; check the address in WALLFLOWER_URL and your connection`)
+      : `cannot reach the Wallflower server at ${SERVER} (set by ${chosen.from}); check the address and your connection, or use --server local`)
   }
   const text = await res.text()
   if (!res.ok) die(`error ${res.status}: ${text}`)
@@ -89,13 +138,13 @@ async function info() {
   return infoCache
 }
 async function ui() {
-  return env('UI') ?? (await info()).ui
+  return UI ?? (await info()).ui
 }
 
 // Whether the link just printed can go to other people. On stderr, so stdout stays just the id and URL.
 async function shareNote() {
   if ((await info()).hosted) console.error('Anyone with this link can view, edit, and read back the board. Send it only to the people who should be in the room.')
-  else console.error('This is a local server, so the link only opens on this machine (unless you put the server behind a tunnel). To share a board with other people, create it on a hosted server: set WALLFLOWER_URL and WALLFLOWER_TOKEN.')
+  else console.error('This is a local server, so the link only opens on this machine (unless you put the server behind a tunnel). To share a board with other people, create it on a shared server: pass --server, or set WALLFLOWER_URL and WALLFLOWER_TOKEN (in the environment or the config file).')
 }
 
 // Cards that name a local source file (source.file, or a file:// url) get a preview cut here, on the
@@ -190,6 +239,11 @@ switch (cmd) {
     break
   case 'list':
     for (const b of await api('GET', '/api/boards')) console.log(`${b.id}\t${b.cards} cards\t${b.title}`)
+    break
+  case 'server':
+    console.log(SERVER)
+    console.error(`from ${chosen.from}${TOKEN ? ', with a token' : ''}`)
+    if (saved.id && saved.server && norm(saved.server) !== SERVER && !serverFlag && !env('URL')) console.error(`the current board, ${saved.id}, is on ${saved.server}`)
     break
   case 'use':
     if (!args[0]) die('wallflower use <id>')

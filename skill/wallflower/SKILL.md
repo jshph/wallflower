@@ -30,7 +30,7 @@ wallflower share                     the link for other people; says on stderr w
 wallflower list | wallflower use <id>
 ```
 
-`wallflower url` prints where the board opens. A local server only answers on this machine; don't expose it yourself. If the user has a hosted server, `WALLFLOWER_URL` points at it (and `WALLFLOWER_TOKEN` is set, which `wallflower new` and `wallflower list` need there). A hosted board's link is its only key: anyone holding it can edit and read the board, so hand it only to the people who should be in the room, and don't paste it anywhere public. To work on a board someone else created, take the id from its link (`?board=<id>`) and run `wallflower use <id>`; no token needed.
+`wallflower url` prints where the board opens. A local server only answers on this machine; don't expose it yourself. If the user has a shared server, it is usually the default already (in `~/.config/wallflower/config.env`, or `WALLFLOWER_URL` and `WALLFLOWER_TOKEN`); `wallflower server` says which server you're on. `--server <url>` points any command elsewhere, and `--server local` at this machine: use it for a board only the user will see that holds private material, unless they've said otherwise. Pass it to `wallflower new` or `wallflower use`; later commands on that board stay on its server without it. A hosted board's link is its only key: anyone holding it can edit and read the board, so hand it only to the people who should be in the room, and don't paste it anywhere public. To work on a board someone else created, take the id from its link (`?board=<id>`) and run `wallflower use <id>`; no token needed.
 
 ## 0. Decide what the board is for
 

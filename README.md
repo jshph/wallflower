@@ -59,7 +59,8 @@ All optional, as environment variables. The older `ROOMBOARD_*` names still work
 | `WALLFLOWER_ALLOWED_HOSTS` | none | extra hostnames to accept, comma-separated; `.example.com` matches subdomains, `all` matches anything |
 | `WALLFLOWER_TOKEN` | none | turns on hosted mode for a shared server (below); the CLI sends it too |
 | `VITE_TLDRAW_LICENSE_KEY` | none | a tldraw business license key, read at build time; not needed (see License) |
-| `WALLFLOWER_URL` | `http://127.0.0.1:8787` | where the CLI finds the server |
+| `WALLFLOWER_URL` | from the config file, else `http://127.0.0.1:8787` | where the CLI finds the server; `--server` overrides it per command |
+| `WALLFLOWER_CONFIG` | `~/.config/wallflower/config.env` | the CLI's config file (below) |
 | `WALLFLOWER_UI` | asked from the server | base URL the CLI prints for boards |
 | `WALLFLOWER_ACTOR` | `agent:<username>` | who the CLI writes as |
 | `WALLFLOWER_BOARD` | the last `wallflower new` / `wallflower use` | which board the CLI acts on |
@@ -100,14 +101,29 @@ Without Docker: `npm install`, `npm run build`, then `node bin/wallflower.mjs se
 
 ### Use it from an agent
 
+Make the shared server this machine's default by putting it in the CLI's config file, `~/.config/wallflower/config.env`:
+
 ```bash
-export WALLFLOWER_URL=https://board.example.com
-export WALLFLOWER_TOKEN=…        # only for `wallflower new` and `wallflower list`
-wallflower new "Title"                # prints the link to share (`wallflower share` prints it again)
-wallflower diff                       # works for anyone with the board id, token or not
+mkdir -p ~/.config/wallflower
+cat > ~/.config/wallflower/config.env <<'EOF'
+WALLFLOWER_URL=https://board.example.com
+WALLFLOWER_TOKEN=…
+EOF
+chmod 600 ~/.config/wallflower/config.env
 ```
 
-People who open a link are asked their name once; the board's **Share** button copies its link. Whoever has only a link (`…/?board=<id>`) can still use the CLI: `WALLFLOWER_URL=https://board.example.com wallflower use <id>`, then `view`, `put`, `diff`, `wait`.
+Every `wallflower` command then talks to that server, from any shell or agent, with no environment to set up. The token is needed only for `wallflower new` and `wallflower list`. Only the CLI reads this file; `wallflower serve` ignores it.
+
+```bash
+wallflower new "Title"                  # prints the link to share (`wallflower share` prints it again)
+wallflower diff                         # works for anyone with the board id, token or not
+wallflower new "Just me" --server local # this board stays on this machine
+wallflower server                       # which server, and where that setting came from
+```
+
+`--server <url>` works on any command, and so does `--server local`. Otherwise the CLI uses `WALLFLOWER_URL` from the environment, then the config file, then a server on this machine. A board you make or pick with `--server` stays on that server: later `put`, `view`, `diff` and `wait` follow it without the flag. A token goes only to the server it was set with, so pointing a command at another server never sends it your token.
+
+People who open a link are asked their name once; the board's **Share** button copies its link. Whoever has only a link (`…/?board=<id>`) can still use the CLI: `wallflower use <id> --server https://board.example.com`, then `view`, `put`, `diff`, `wait`.
 
 ## License
 

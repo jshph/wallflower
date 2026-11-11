@@ -1,8 +1,8 @@
 # Wallflower
 
-A shared tldraw whiteboard that an agent fills with what's worth discussing before a meeting, and reads back afterwards to separate the room's judgment from its own.
+A shared tldraw whiteboard that an agent fills with what's worth discussing before a meeting, and helps flesh out as the ideas on the board evolve.
 
-Wallflower is software you run yourself; there is no public Wallflower server to sign up for. By default the board server runs on your machine, for you and your agent. To share boards with people on other machines, deploy your own copy (see [Run a shared server](#run-a-shared-server)).
+Wallflower publishes whiteboards to byenzyme.com so you can share boards with other people. You can also run it locally for your own use, or deploy your own copy (see [Run a shared server](#run-a-shared-server)).
 
 ## Use it
 

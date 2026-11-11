@@ -1,28 +1,29 @@
 #!/usr/bin/env node
-// Agent interface to a roomboard. Talks to the running server so every write
+// Agent interface to a Wallflower board. Talks to the running server so every write
 // shows up live on any open board.
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { env, homeDir } from '../server/env.mjs'
 import { fileURLToPath } from 'node:url'
 import { cutPassage } from '../server/passage.mjs'
 
-const SERVER = process.env.ROOMBOARD_URL ?? `http://127.0.0.1:${process.env.ROOMBOARD_PORT ?? 8787}`
-const CURRENT = path.join(os.homedir(), '.roomboard', 'current')
+const SERVER = env('URL') ?? `http://127.0.0.1:${env('PORT') ?? 8787}`
+const CURRENT = path.join(homeDir(), 'current')
 
-const HELP = `board — put cards on a shared board, then read back what people did
+const HELP = `wallflower (or wf): put cards on a shared board, then read back what people did
 
-  board serve                     run the board server and UI (default http://localhost:8787)
-  board new "Title" [--id ID]     create a board and make it current; prints its URL (hosted servers pick the id)
-  board put plan.json|-           add or update groups and cards; prints the layout, then warnings and layout problems
-  board view                      the board as text: layout map, then every card with its position
-  board diff                      what people changed since they first touched the board
-  board wait [--timeout SECONDS]  block (default 20 minutes) until someone presses "Take another pass", then print that
+  wallflower serve                     run the board server and UI (default http://localhost:8787)
+  wallflower new "Title" [--id ID]     create a board and make it current; prints its URL (hosted servers pick the id)
+  wallflower put plan.json|-           add or update groups and cards; prints the layout, then warnings and layout problems
+  wallflower view                      the board as text: layout map, then every card with its position
+  wallflower diff                      what people changed since they first touched the board
+  wallflower wait [--timeout SECONDS]  block (default 20 minutes) until someone presses "Take another pass", then print that
                                   round: stickies and moved cards in their neighborhoods, groups,
                                   removals, and any note. Exits 2 if the timeout passes first.
-  board url [--name Name]         the board's URL, with a name for whoever opens it
-  board share                     the link to send to other people, and whether they can reach it
-  board list | board use <id>
+  wallflower url [--name Name]         the board's URL, with a name for whoever opens it
+  wallflower share                     the link to send to other people, and whether they can reach it
+  wallflower list | wallflower use <id>
 
 Plan (every field optional except ids; plans can be partial):
   { "title": "…",
@@ -50,11 +51,11 @@ function die(msg) {
 const args = process.argv.slice(2)
 const cmd = args.shift()
 const flag = (name) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args.splice(i, 2)[1] : undefined }
-const actor = process.env.ROOMBOARD_ACTOR ?? (process.env.BB_THREAD_ID ? `agent:${process.env.BB_THREAD_ID}` : `agent:${os.userInfo().username}`)
+const actor = env('ACTOR') ?? (process.env.BB_THREAD_ID ? `agent:${process.env.BB_THREAD_ID}` : `agent:${os.userInfo().username}`)
 
 function current() {
-  const id = process.env.ROOMBOARD_BOARD ?? (fs.existsSync(CURRENT) ? fs.readFileSync(CURRENT, 'utf8').trim() : null)
-  if (!id) die('no board selected: run `board new "Title"` or `board use <id>`')
+  const id = env('BOARD') ?? (fs.existsSync(CURRENT) ? fs.readFileSync(CURRENT, 'utf8').trim() : null)
+  if (!id) die('no board selected: run `wallflower new "Title"` or `wallflower use <id>`')
   return id
 }
 
@@ -68,13 +69,13 @@ async function api(method, p, data) {
   try {
     const headers = { 'content-type': 'application/json', 'x-actor': actor }
     // A hosted server wants its token to list or create boards; per-board calls need only the id.
-    if (process.env.ROOMBOARD_TOKEN) headers.authorization = `Bearer ${process.env.ROOMBOARD_TOKEN}`
+    if (env('TOKEN')) headers.authorization = `Bearer ${env('TOKEN')}`
     res = await fetch(SERVER + p, { method, headers, body: data ? JSON.stringify(data) : undefined })
   } catch {
     const local = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(SERVER)
     die(local
-      ? `cannot reach roomboard server at ${SERVER}; start it with \`board serve\` (or \`npm run dev\` in a checkout)`
-      : `cannot reach roomboard server at ${SERVER}; check the address in ROOMBOARD_URL and your connection`)
+      ? `cannot reach the Wallflower server at ${SERVER}; start it with \`wallflower serve\` (or \`npm run dev\` in a checkout)`
+      : `cannot reach the Wallflower server at ${SERVER}; check the address in WALLFLOWER_URL and your connection`)
   }
   const text = await res.text()
   if (!res.ok) die(`error ${res.status}: ${text}`)
@@ -88,13 +89,13 @@ async function info() {
   return infoCache
 }
 async function ui() {
-  return process.env.ROOMBOARD_UI ?? (await info()).ui
+  return env('UI') ?? (await info()).ui
 }
 
 // Whether the link just printed can go to other people. On stderr, so stdout stays just the id and URL.
 async function shareNote() {
   if ((await info()).hosted) console.error('Anyone with this link can view, edit, and read back the board. Send it only to the people who should be in the room.')
-  else console.error('This is a local server, so the link only opens on this machine (unless you put the server behind a tunnel). To share a board with other people, create it on a hosted server: set ROOMBOARD_URL and ROOMBOARD_TOKEN.')
+  else console.error('This is a local server, so the link only opens on this machine (unless you put the server behind a tunnel). To share a board with other people, create it on a hosted server: set WALLFLOWER_URL and WALLFLOWER_TOKEN.')
 }
 
 // Cards that name a local source file (source.file, or a file:// url) get a preview cut here, on the
@@ -191,7 +192,7 @@ switch (cmd) {
     for (const b of await api('GET', '/api/boards')) console.log(`${b.id}\t${b.cards} cards\t${b.title}`)
     break
   case 'use':
-    if (!args[0]) die('board use <id>')
+    if (!args[0]) die('wallflower use <id>')
     setCurrent(args[0])
     console.log(args[0])
     break

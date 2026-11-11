@@ -1,0 +1,59 @@
+{
+ "cards": [
+  {
+   "id": "devfirst",
+   "kind": "quote",
+   "title": "Dev in #eng",
+   "body": "doing the sharing fix first, quick one",
+   "source": {
+    "label": "#eng",
+    "file": "../corpus/slack/eng.md",
+    "author": "Dev"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "prs",
+   "kind": "note",
+   "title": "Dev's last four PRs",
+   "body": "Three touch sharing: invites, permissions, edited-by. None touch recipe import.",
+   "source": {
+    "label": "Merged PRs",
+    "file": "../corpus/github/recent-prs.md"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "slipped",
+   "kind": "note",
+   "title": "Recipe import, rescheduled twice",
+   "body": "LAR-110 moved from Cycle 7 to 8, then to 9.",
+   "source": {
+    "label": "Linear cycles",
+    "file": "../corpus/linear/cycles.md"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "door",
+   "kind": "quote",
+   "title": "Maya on why import comes first",
+   "body": "import is how new households get in the door. sharing only matters once they're here.",
+   "source": {
+    "label": "#product",
+    "file": "../corpus/slack/product.md",
+    "author": "Maya",
+    "date": "Oct 20"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  }
+ ]
+}

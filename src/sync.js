@@ -177,7 +177,7 @@ export function startSync(editor, { boardId, actor, onStatus }) {
       if (!hoods.has(key)) hoods.set(key, [])
       hoods.get(key).push(ch)
     }
-    tour = tour.then(() => playTour([...hoods], actorId)).catch((err) => console.warn('[roomboard] tour', err))
+    tour = tour.then(() => playTour([...hoods], actorId)).catch((err) => console.warn('[wallflower] tour', err))
   }
 
   function init(board) {
@@ -266,7 +266,7 @@ export function startSync(editor, { boardId, actor, onStatus }) {
       if (msg.type === 'init') init(msg.board)
       if (msg.type === 'presence') presence.set(msg.presence)
       if (msg.type === 'changes' && msg.origin !== client) applyBatch(msg.changes, msg.actor)
-      if (msg.type === 'warnings' || msg.type === 'error') console.warn('[roomboard]', msg)
+      if (msg.type === 'warnings' || msg.type === 'error') console.warn('[wallflower]', msg)
     }
   }
   connect()

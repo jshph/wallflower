@@ -1,8 +1,16 @@
 {
-  "name": "roomboard",
+  "name": "wallflower-board",
   "version": "0.1.0",
-  "description": "A shared whiteboard an agent fills before a meeting and reads back afterwards",
+  "description": "A shared whiteboard your agent fills before a meeting and reads back afterwards",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jshph/wallflower.git"
+  },
+  "homepage": "https://github.com/jshph/wallflower#readme",
+  "bugs": {
+    "url": "https://github.com/jshph/wallflower/issues"
+  },
   "type": "module",
   "keywords": [
     "whiteboard",
@@ -12,8 +20,8 @@
     "facilitation"
   ],
   "bin": {
-    "roomboard": "./bin/board.mjs",
-    "board": "./bin/board.mjs"
+    "wallflower": "./bin/wallflower.mjs",
+    "wf": "./bin/wallflower.mjs"
   },
   "files": [
     "bin",
@@ -27,10 +35,11 @@
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "start": "node bin/board.mjs serve",
+    "start": "node bin/wallflower.mjs serve",
     "build": "vite build",
     "prepack": "vite build",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "demo": "node examples/demo/run.mjs"
   },
   "dependencies": {
     "ws": "^8.22.1"

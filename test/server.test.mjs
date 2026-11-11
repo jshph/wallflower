@@ -231,3 +231,69 @@ test('board ids must be a single safe path segment', () => {
   assert.equal(s.get(null), null)
   assert.equal(s.create({ id: 'ok_id-1', title: 'fine' }, AG).id, 'ok_id-1')
 })
+
+// Read-back counts what people meant, not geometry that happens to line up.
+const readBack = (s) => {
+  const d = diffBoards(s.getSnapshot('t', PROPOSED), s.get('t'), s.events('t'))
+  return { d, md: diffToMarkdown(d, s.getSnapshot('t', PROPOSED).state, s.get('t')) }
+}
+
+test('read-back: one card leaving a group thins it; two blocs going different ways split it', () => {
+  const s = fresh()
+  s.applyPlan('t', { ...plan, cards: [...plan.cards, { id: 'c6', kind: 'note', title: 'fourth in a', place: { in: 'a' } }] }, AG)
+  const B = s.get('t').clusters.b
+  s.apply('t', [{ op: 'card.move', id: 'c3', x: B.x + 30, y: B.y + 400 }], HU)
+  let { d, md } = readBack(s)
+  const a = () => d.clusterFates.find((f) => f.id === 'a')
+  assert.equal(a().verdict, 'thinned')
+  assert.deepEqual(a().left, ['c3'])
+  assert.match(md, /\*\*thinned\*\*, #3 left/)
+
+  s.apply('t', [{ op: 'card.move', id: 'c6', x: B.x + 30, y: B.y + 600 }], HU)
+  ;({ d } = readBack(s))
+  assert.equal(a().verdict, 'split', 'two cards stayed, two went to b')
+})
+
+test('read-back: a corner touch is not a pairing', () => {
+  const s = fresh()
+  s.applyPlan('t', plan, AG)
+  const c2 = s.get('t').cards.c2
+  const c4 = s.get('t').cards.c4
+  s.apply('t', [{ op: 'card.move', id: 'c2', x: c4.x - c2.w + 8, y: c4.y - c2.h + 8 }], HU)
+  assert.ok(overlaps(s.get('t').cards.c2, c4), 'the corners do touch')
+  const { d, md } = readBack(s)
+  assert.deepEqual(d.pairs.overlapping, [])
+  assert.doesNotMatch(md, /placed overlapping/)
+  assert.ok(c2)
+})
+
+test('read-back: sharing a group only counts when a person carried a card there', () => {
+  const s = fresh()
+  s.applyPlan('t', plan, AG)
+  const b = s.get('t').clusters.b
+  const ed = s.get('t').cards.ed
+  // Stretching group b over the edge card puts it "in" b without anyone moving it.
+  s.apply('t', [{ op: 'cluster.update', id: 'b', w: ed.x + ed.w + 40 - b.x, h: Math.max(b.h, ed.y + ed.h + 40 - b.y) }], HU)
+  assert.equal(membershipOf(s.get('t').cards.ed, s.get('t').clusters), 'b')
+  let { d, md } = readBack(s)
+  assert.equal(d.summary.newPairs, 0)
+  assert.equal(d.summary.carriedIn, 0)
+
+  // Carrying c1 into b pairs it with everything there, but reads as one move.
+  const B = s.get('t').clusters.b
+  s.apply('t', [{ op: 'card.move', id: 'c1', x: B.x + 30, y: B.y + B.h - 200 }], HU)
+  ;({ d, md } = readBack(s))
+  assert.equal(d.summary.carriedIn, 1)
+  assert.ok(d.summary.newPairs >= 2)
+  assert.equal((md.match(/carried into/g) ?? []).length, 1)
+  assert.match(md, /People carried 1 card into other groups/)
+})
+
+test('read-back: prompts are never listed as untouched', () => {
+  const s = fresh()
+  s.applyPlan('t', { ...plan, cards: [...plan.cards, { id: 'p', kind: 'prompt', title: 'Start here: what are we deciding?', place: { at: { x: 0, y: -300 } } }] }, AG)
+  s.apply('t', [{ op: 'cluster.update', id: 'a', label: 'counting' }], HU)
+  const { d, md } = readBack(s)
+  assert.equal(d.summary.untouched, plan.cards.length)
+  assert.doesNotMatch(md.split('## Untouched')[1] ?? '', /Start here/)
+})

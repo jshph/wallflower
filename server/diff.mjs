@@ -3,7 +3,18 @@
 import { center, membershipOf, overlaps } from './layout.mjs'
 
 const MOVE_THRESHOLD = 40
+// Two cards read as dropped onto each other only when they share real area, not a corner.
+const OVERLAP_SHARE = 0.15
 const isHuman = (a) => typeof a === 'string' && a.startsWith('human:')
+// Prompts are instructions to the room, not material, so they never count as pairs or as untouched.
+const isMaterial = (c) => c && c.kind !== 'prompt'
+
+function overlapShare(a, b) {
+  const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
+  const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
+  if (w <= 0 || h <= 0) return 0
+  return (w * h) / Math.min(a.w * a.h, b.w * b.h)
+}
 
 function groups(state) {
   const out = {}
@@ -65,7 +76,10 @@ export function diffBoards(snapshot, current, events) {
   cards.sort((x, y) => x.n - y.n)
 
   // Pairwise grouping agreement over cards that exist on both boards.
-  const both = cards.filter((c) => A.cards[c.id] && B.cards[c.id]).map((c) => c.id)
+  const both = cards.filter((c) => isMaterial(A.cards[c.id]) && B.cards[c.id]).map((c) => c.id)
+  // A new pair is a claim only if a person carried one of its cards into the other's group.
+  const fateOf = Object.fromEntries(cards.map((c) => [c.id, c]))
+  const carried = (id) => fateOf[id].status === 'regrouped' && fateOf[id].by.some(isHuman)
   const together = (g, x, y) => g[x] && g[x] === g[y] && A.clusters[g[x]]?.role !== 'zone'
   const togetherB = (x, y) => gB[x] && gB[x] === gB[y] && B.clusters[gB[x]]?.role !== 'zone'
   const keptPairs = []
@@ -77,17 +91,17 @@ export function diffBoards(snapshot, current, events) {
     const tb = togetherB(x, y)
     if (ta && tb) keptPairs.push([x, y])
     else if (ta && !tb) brokenPairs.push([x, y])
-    else if (!ta && tb) newPairs.push([x, y])
+    else if (!ta && tb && (carried(x) || carried(y))) newPairs.push([x, y])
   }
 
   // Cards people dropped onto each other: a stronger pairing claim than sharing a group.
-  const solid = (c) => c && c.kind !== 'sticky'
+  const solid = (c) => isMaterial(c) && c.kind !== 'sticky'
   const overlapPairs = []
   for (let i = 0; i < both.length; i++) for (let j = i + 1; j < both.length; j++) {
     const [x, y] = [both[i], both[j]]
     if (!solid(B.cards[x]) || !solid(B.cards[y])) continue
     const byPerson = [...(touches[x] ?? []), ...(touches[y] ?? [])].some(isHuman)
-    if (byPerson && overlaps(B.cards[x], B.cards[y]) && !overlaps(A.cards[x], A.cards[y])) overlapPairs.push([x, y])
+    if (byPerson && overlapShare(B.cards[x], B.cards[y]) >= OVERLAP_SHARE && !overlaps(A.cards[x], A.cards[y])) overlapPairs.push([x, y])
   }
 
   // What happened to each group the agent proposed.
@@ -103,13 +117,18 @@ export function diffBoards(snapshot, current, events) {
     const b = B.clusters[cl.id]
     const fate = { id: cl.id, role: cl.role, labelBefore: cl.label, labelAfter: b?.label, deleted: !b, members: members.length, surviving: surviving.length, destinations: dest, why: cl.meta?.why }
     if (cl.role === 'zone') { clusterFates.push(fate); continue }
-    const destKeys = Object.keys(dest)
     const intruders = b ? Object.keys(gB).filter((id) => gB[id] === cl.id && !members.includes(id)) : []
     fate.joinedBy = intruders
+    // Where most of the group went; cards that left one at a time are departures, not a split.
+    // A split needs at least two destinations that each took two or more of its cards.
+    const main = Object.keys(dest).sort((x, y) => dest[y].length - dest[x].length || (y === cl.id) - (x === cl.id))[0]
+    const blocs = Object.values(dest).filter((ids) => ids.length >= 2).length
+    fate.left = Object.entries(dest).filter(([g]) => g !== main).flatMap(([, ids]) => ids)
     if (!surviving.length) fate.verdict = 'emptied'
-    else if (destKeys.length === 1 && destKeys[0] === cl.id) fate.verdict = intruders.length ? 'kept-and-extended' : 'kept'
-    else if (destKeys.length === 1) fate.verdict = destKeys[0] === 'loose' ? 'dissolved' : B.clusters[destKeys[0]]?.role === 'zone' ? `moved-to-zone` : 'merged-into-other'
-    else fate.verdict = 'split'
+    else if (blocs >= 2) fate.verdict = 'split'
+    else if (main === cl.id) fate.verdict = fate.left.length ? 'thinned' : intruders.length ? 'kept-and-extended' : 'kept'
+    else fate.verdict = main === 'loose' ? 'dissolved' : B.clusters[main]?.role === 'zone' ? 'moved-to-zone' : 'merged-into-other'
+    if (fate.verdict === 'split') fate.left = []
     if (b && b.label !== cl.label) fate.renamed = true
     clusterFates.push(fate)
   }
@@ -125,7 +144,7 @@ export function diffBoards(snapshot, current, events) {
     events: after.filter((e) => isHuman(e.actor)).length,
     cardsProposed: Object.keys(A.cards).length,
     cardsNow: Object.keys(B.cards).length,
-    untouched: cards.filter((c) => c.status === 'untouched').length,
+    untouched: cards.filter((c) => c.status === 'untouched' && isMaterial(c)).length,
     regrouped: cards.filter((c) => c.status === 'regrouped').length,
     deleted: cards.filter((c) => c.status === 'deleted').length,
     added: cards.filter((c) => c.status === 'added' && isHuman(c.createdBy)).length,
@@ -134,6 +153,7 @@ export function diffBoards(snapshot, current, events) {
     keptPairs: keptPairs.length,
     brokenPairs: brokenPairs.length,
     newPairs: newPairs.length,
+    carriedIn: cards.filter((c) => isMaterial(c) && carried(c.id) && c.groupAfter && B.clusters[c.groupAfter]?.role !== 'zone').length,
     clusterVerdicts: Object.fromEntries(clusterFates.filter((c) => c.role !== 'zone').map((c) => [c.id, c.verdict])),
   }
 
@@ -150,13 +170,14 @@ export function diffToMarkdown(d, A, B) {
   L.push('')
   L.push(`Proposed by ${s.proposer}. Since people started on it: ${s.events} events by ${s.actorsAfter.join(', ') || 'nobody'}.`)
   L.push(`Cards: ${s.cardsProposed} proposed, ${s.cardsNow} now. ${s.regrouped} regrouped, ${s.deleted} removed, ${s.added} added by people, ${s.untouched} untouched.${s.addedByAgents ? ` Agents added ${s.addedByAgents} more after hand-off.` : ''}`)
-  if (s.groupingAgreement != null) L.push(`Grouping agreement: ${Math.round(s.groupingAgreement * 100)}% of the pairs the agent put together are still together (${s.keptPairs} kept, ${s.brokenPairs} broken). People formed ${s.newPairs} new pairs${d.pairs.overlapping.length ? ` and dropped ${d.pairs.overlapping.length} pairs onto each other` : ''}.`)
+  if (s.groupingAgreement != null) L.push(`Grouping agreement: ${Math.round(s.groupingAgreement * 100)}% of the pairs the agent put together are still together (${s.keptPairs} kept, ${s.brokenPairs} broken). People carried ${s.carriedIn} ${s.carriedIn === 1 ? 'card' : 'cards'} into other groups${d.pairs.overlapping.length ? ` and dropped ${d.pairs.overlapping.length} ${d.pairs.overlapping.length === 1 ? 'pair' : 'pairs'} onto each other` : ''}.`)
   L.push('')
   L.push('## Proposed groups')
   for (const c of d.clusterFates.filter((c) => c.role !== 'zone')) {
     const name = c.labelBefore ? `"${c.labelBefore}"` : `unnamed group ${c.id}`
     const dest = Object.entries(c.destinations).map(([g, ids]) => `${g === 'loose' ? 'loose' : label(B, g)}: ${ids.map((id) => '#' + byId(id).n).join(' ')}`).join('; ')
-    L.push(`- ${name} → **${c.verdict}**${c.renamed ? `, renamed to "${c.labelAfter}"` : ''}${c.deleted ? ' (group deleted)' : ''}. Members now: ${dest || 'none'}.${c.joinedBy?.length ? ` Joined by ${c.joinedBy.map(ref).join(', ')}.` : ''}`)
+    const left = c.left?.length ? `, ${c.left.map((id) => '#' + byId(id).n).join(' ')} left` : ''
+    L.push(`- ${name} → **${c.verdict}**${left}${c.renamed ? `, renamed to "${c.labelAfter}"` : ''}${c.deleted ? ' (group deleted)' : ''}. Members now: ${dest || 'none'}.${c.joinedBy?.length ? ` Joined by ${c.joinedBy.map(ref).join(', ')}.` : ''}`)
     if (c.why) L.push(`  - agent's reason: ${c.why}`)
   }
   if (d.newClusters.length) {
@@ -186,17 +207,24 @@ export function diffToMarkdown(d, A, B) {
     if (c.why && c.status !== 'added') L.push(`  - agent's reason: ${c.why}`)
     if (c.edits) for (const e of c.edits) for (const f of e.fields) if (typeof e.before[f] === 'string') L.push(`  - ${f}: "${e.before[f]}" → "${e.after[f]}"`)
   }
-  const untouched = d.cards.filter((c) => c.status === 'untouched')
+  const untouched = d.cards.filter((c) => c.status === 'untouched' && isMaterial(c))
   if (untouched.length) {
     L.push('')
     L.push(`## Untouched (${untouched.length})`)
     L.push(untouched.map((c) => `#${c.n} ${c.name}`).join(' · '))
   }
-  if (d.pairs.new.length || d.pairs.overlapping.length) {
+  // One line per card a person carried into a group, naming what it now sits with,
+  // rather than one line per pair it now shares a group with.
+  const joined = new Map()
+  for (const [x, y] of d.pairs.new) for (const [m, o] of [[x, y], [y, x]]) {
+    const f = d.cards.find((c) => c.id === m)
+    if (f.status === 'regrouped' && f.by.some(isHuman)) (joined.get(m) ?? joined.set(m, []).get(m)).push(o)
+  }
+  if (joined.size || d.pairs.overlapping.length) {
     L.push('')
     L.push('## Connections people made that the agent did not')
     for (const [x, y] of d.pairs.overlapping) L.push(`- ${ref(x)} + ${ref(y)} (placed overlapping)`)
-    for (const [x, y] of d.pairs.new.slice(0, 30)) L.push(`- ${ref(x)} + ${ref(y)}`)
+    for (const [m, others] of joined) L.push(`- ${ref(m)} carried into ${label(B, d.cards.find((c) => c.id === m).groupAfter)}, now with ${others.map((id) => '#' + byId(id).n).join(' ')}`)
   }
   if (agentAdded.length) {
     L.push('')

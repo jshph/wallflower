@@ -1,18 +1,18 @@
 ---
-name: roomboard
-description: Populate a shared whiteboard (roomboard, tldraw) with what's worth discussing before a meeting or a private review, take further passes when people ask for more, then read back what people did to it and separate their judgment from yours. Use from a prep thread, cold or already holding context, when the user asks to "put this on the board", "prep the board", "populate the board", "take another pass", or "what did the room do with the board".
+name: wallflower
+description: Populate a shared whiteboard (Wallflower, built on tldraw) with what's worth discussing before a meeting or a private review, take further passes when people ask for more, then read back what people did to it and separate their judgment from yours. Use from a prep thread, cold or already holding context, when the user asks to "put this on the board", "prep the board", "populate the board", "take another pass", or "what did the room do with the board".
 ---
 
-# roomboard
+# Wallflower
 
 AI does the prep, and the room does the thinking. Your job is to set what the conversation starts from: the material, placed so the relations worth arguing about are visible, with nothing that looks finished. Afterwards, read back what people did to the board, because that is the record of their judgment.
 
 ## Setup
 
-`board` comes from the `roomboard` npm package (`npm install -g roomboard`, or prefix commands with `npx roomboard` in place of `board`). Run `board list` first. If it can't reach the server, start it in the background:
+`wallflower` (or its short form `wf`) comes from the `wallflower-board` npm package: `npm install -g wallflower-board`, or prefix commands with `npx wallflower-board` in place of `wallflower`. Run `wallflower list` first. If it can't reach the server, start it in the background:
 
 ```bash
-(nohup board serve > /tmp/roomboard.log 2>&1 &)
+(nohup wallflower serve > /tmp/wallflower.log 2>&1 &)
 ```
 
 In a checkout of the repo, `npm run dev` runs the server with a live-reloading UI instead.
@@ -20,17 +20,17 @@ In a checkout of the repo, `npm run dev` runs the server with a live-reloading U
 The whole interface:
 
 ```
-board new "Title" [--id ID]     create a board and make it current
-board put plan.json|-           add or update groups and cards; prints the layout, warnings, and layout problems
-board view                      layout map, then every card with its position
-board diff                      what people changed since they first touched the board
-board wait [--timeout SECONDS]  block until someone presses "Take another pass"; prints that round
-board url [--name Name]         the URL to hand over, with the user's name in it
-board share                     the link for other people; says on stderr whether they can reach it
-board list | board use <id>
+wallflower new "Title" [--id ID]     create a board and make it current
+wallflower put plan.json|-           add or update groups and cards; prints the layout, warnings, and layout problems
+wallflower view                      layout map, then every card with its position
+wallflower diff                      what people changed since they first touched the board
+wallflower wait [--timeout SECONDS]  block until someone presses "Take another pass"; prints that round
+wallflower url [--name Name]         the URL to hand over, with the user's name in it
+wallflower share                     the link for other people; says on stderr whether they can reach it
+wallflower list | wallflower use <id>
 ```
 
-`board url` prints where the board opens. A local server only answers on this machine; don't expose it yourself. If the user has a hosted server, `ROOMBOARD_URL` points at it (and `ROOMBOARD_TOKEN` is set, which `board new` and `board list` need there). A hosted board's link is its only key: anyone holding it can edit and read the board, so hand it only to the people who should be in the room, and don't paste it anywhere public. To work on a board someone else created, take the id from its link (`?board=<id>`) and run `board use <id>`; no token needed.
+`wallflower url` prints where the board opens. A local server only answers on this machine; don't expose it yourself. If the user has a hosted server, `WALLFLOWER_URL` points at it (and `WALLFLOWER_TOKEN` is set, which `wallflower new` and `wallflower list` need there). A hosted board's link is its only key: anyone holding it can edit and read the board, so hand it only to the people who should be in the room, and don't paste it anywhere public. To work on a board someone else created, take the id from its link (`?board=<id>`) and run `wallflower use <id>`; no token needed.
 
 ## 0. Decide what the board is for
 
@@ -70,7 +70,7 @@ Anything on a shared board must come from sources everyone in the room may see. 
 
 ## 2. Write the plan
 
-Write the plan JSON by hand, in a file or on stdin, and put it in one go: groups, cards, and their placements together. Don't build a generator script, and don't write a validator: `board put` lays the board out, truncates copy that is over budget, and checks the result.
+Write the plan JSON by hand, in a file or on stdin, and put it in one go: groups, cards, and their placements together. Don't build a generator script, and don't write a validator: `wallflower put` lays the board out, truncates copy that is over budget, and checks the result.
 
 ```json
 {
@@ -90,14 +90,14 @@ Write the plan JSON by hand, in a file or on stdin, and put it in one go: groups
 ```
 
 ```bash
-board put plan.json
+wallflower put plan.json
 ```
 
-Plans can be partial. Put the same id again to edit or move a card, and `{ "id": "x", "delete": true }` removes it. Anywhere an id goes you can use a card's number instead (`"#17"`), which is how rounds and `board view` show people's stickies. Groups sit on a grid (`col`, `row`); you never compute pixels. Leave groups unlabeled, because naming them is the room's act; `why` is for the read-back, not the board. Zones are the exception: label them (`"Decided"`, `"Carry into next week"`), since a zone's name is the instruction.
+Plans can be partial. Put the same id again to edit or move a card, and `{ "id": "x", "delete": true }` removes it. Anywhere an id goes you can use a card's number instead (`"#17"`), which is how rounds and `wallflower view` show people's stickies. Groups sit on a grid (`col`, `row`); you never compute pixels. Leave groups unlabeled, because naming them is the room's act; `why` is for the read-back, not the board. Zones are the exception: label them (`"Decided"`, `"Carry into next week"`), since a zone's name is the instruction.
 
 Until a person touches the board, every `put` lays the whole board out again from your placements, so moving a group to another `row` or a card to another group just works. After that, anything a person placed stays where they put it: your new cards go in around it, and only your own untouched groups shift to make room.
 
-`put` prints the layout as text, then a check. `layout check: no overlaps, every card in its group, no cut-off text` means you're done. Otherwise each `problem:` line names the cards or groups by id (groups overlapping or too close, a card that reads as in the wrong group, cards covering each other, a title that wraps past three lines, text the browser reported as cut off); fix the plan and put again. `board view` lists the same problems at the end. Overlaps people made are theirs and are never reported. Don't screenshot the board to check layout.
+`put` prints the layout as text, then a check. `layout check: no overlaps, every card in its group, no cut-off text` means you're done. Otherwise each `problem:` line names the cards or groups by id (groups overlapping or too close, a card that reads as in the wrong group, cards covering each other, a title that wraps past three lines, text the browser reported as cut off); fix the plan and put again. `wallflower view` lists the same problems at the end. Overlaps people made are theirs and are never reported. Don't screenshot the board to check layout.
 
 ### Placement
 
@@ -123,7 +123,7 @@ Width is fixed per kind and height follows the copy.
 
 Set `people` (an array of names, `["Rosa", "Kim", "Lee"]`) when breadth matters; it renders as "from 3 people". A pattern resting on one or two voices should look thin. Put a link in `source.url` only if everyone in the room can open it (a shared doc, a ticket, a PR); never a link to private notes, which is useless to them and leaks where your files live. For files, use `source.file` (below), which stays on your machine.
 
-**Source previews.** Give every card that comes from a file its `source.file` (an absolute path; a `file://` url works too). `board put` reads the file on your machine and attaches about 200 words around the card's quote, which people open by double-clicking the card or clicking its source line. The quote is a quote card's `body`; on a note card, set `source.quote` to a verbatim phrase from the file, or the preview is the file's opening. The file itself never leaves your machine. Never write a preview yourself: `put` drops any `source.passage` in the plan. For a source that isn't a file (an email, a ticket), save its raw text with a shell redirect (`gog … > /tmp/src-1.md`) and point `source.file` at that. If `put` warns that a quote wasn't found, the hook isn't verbatim: fix the hook, not the warning.
+**Source previews.** Give every card that comes from a file its `source.file` (an absolute path; a `file://` url works too). `wallflower put` reads the file on your machine and attaches about 200 words around the card's quote, which people open by double-clicking the card or clicking its source line. The quote is a quote card's `body`; on a note card, set `source.quote` to a verbatim phrase from the file, or the preview is the file's opening. The file itself never leaves your machine. Never write a preview yourself: `put` drops any `source.passage` in the plan. For a source that isn't a file (an email, a ticket), save its raw text with a shell redirect (`gog … > /tmp/src-1.md`) and point `source.file` at that. If `put` warns that a quote wasn't found, the hook isn't verbatim: fix the hook, not the warning.
 
 ## Writing the cards
 
@@ -169,10 +169,10 @@ Adjust the start prompt to the room's act ("Pull out what needs a person today")
 
 ## 3. Hand it over
 
-Give the user `board url --name <Their Name>`, then offer to share the board. Ask who else should be in the room, and run `board share`:
+Give the user `wallflower url --name <Their Name>`, then offer to share the board. Ask who else should be in the room, and run `wallflower share`:
 
 - On a hosted server it prints a link anyone can open. Give it to the user to send, along with what the board is for in one line. The link is the board's only key: anyone holding it can edit and read it back, so it goes only to the people who should be in the room. Don't post or send it yourself unless the user asks. Whoever opens it is asked their name; the board has a **Share** button too.
-- On a local server it says the link only opens on this machine. Say so, and if the user wants others in, offer to recreate the board on their hosted server (with `ROOMBOARD_URL` and `ROOMBOARD_TOKEN` set: `board new`, then `board put` the same plan), or point them to the README's hosted mode.
+- On a local server it says the link only opens on this machine. Say so, and if the user wants others in, offer to recreate the board on their hosted server (with `WALLFLOWER_URL` and `WALLFLOWER_TOKEN` set: `wallflower new`, then `wallflower put` the same plan), or point them to the README's hosted mode.
 
 People drag cards, double-click a group's name to name it, use **+ Group** and **+ Zone**, press `n` and click to add a sticky, and delete what doesn't belong. A sticky dropped onto a card gets a pin; while it is dragged, the card or group it will be read as attached to is outlined. When they want more, they press **Take another pass**, optionally with a line of steer.
 
@@ -182,28 +182,28 @@ Don't write a note about building the board. The board is the artifact. Write a 
 
 ## 4. Take another pass
 
-After handing the board over, run `board wait` and let it block. It returns when someone presses **Take another pass** (at once, if someone already pressed it while you weren't waiting) and prints that round: every sticky people wrote with what it sits on or in, the cards nearby and the source files behind them; cards people moved; groups named, made, split or emptied; removals; pairs people made; and the steer line if they wrote one. Each round covers only what people did since the last pass, never your own cards.
+After handing the board over, run `wallflower wait` and let it block. It returns when someone presses **Take another pass** (at once, if someone already pressed it while you weren't waiting) and prints that round: every sticky people wrote with what it sits on or in, the cards nearby and the source files behind them; cards people moved; groups named, made, split or emptied; removals; cards people dropped onto each other; and the steer line if they wrote one. Each round covers only what people did since the last pass, never your own cards.
 
 It waits up to 20 minutes by default. In tools that cap how long a command can run, use `--timeout` a little under the cap and run it again when it exits 2 ("no pass requested yet").
 
 Read the round as a whole, the way a colleague would read the board after stepping out. A sticky's words say what it wants ("more of this", "go further back", "I remember this differently"); its placement says what "this" is. A statement left on the board may want nothing. There are no asks to close: decide what the round as a whole calls for.
 
-Then recall, don't elaborate. Re-read the source files the round lists (and follow their links) before writing anything, so new cards come from what you left out rather than restatements of what you picked. Add a few cards where people pointed, in one `put`: `"place": { "around": "#17" }` (the number the round shows, or an id) rings them around what they answer, inside its group, which grows to hold them; neighboring groups of yours shift to make room, and nothing people placed moves. Don't move or tidy what people arranged: `put` refuses to move a card a person placed. On the board the camera visits each neighborhood in the order you wrote them and drops the cards in there, so write neighborhood by neighborhood. Regroup if the round changed what a group is about, but leave names to people. Then `board view` to re-read the whole neighborhood, and `board wait` again.
+Then recall, don't elaborate. Re-read the source files the round lists (and follow their links) before writing anything, so new cards come from what you left out rather than restatements of what you picked. Add a few cards where people pointed, in one `put`: `"place": { "around": "#17" }` (the number the round shows, or an id) rings them around what they answer, inside its group, which grows to hold them; neighboring groups of yours shift to make room, and nothing people placed moves. Don't move or tidy what people arranged: `put` refuses to move a card a person placed. On the board the camera visits each neighborhood in the order you wrote them and drops the cards in there, so write neighborhood by neighborhood. Regroup if the round changed what a group is about, but leave names to people. Then `wallflower view` to re-read the whole neighborhood, and `wallflower wait` again.
 
 A pass with nothing on the board changed is still a steer: the line they wrote is the whole request.
 
 ## 5. Read back
 
 ```bash
-board diff
+wallflower diff
 ```
 
-It compares the board with how it looked just before a person first touched it: what happened to each proposed group (kept, split, merged, dissolved, moved to a zone) with your `why` beside it, how many of your pairings survived, pairings people made that you didn't (including cards they dropped onto each other), names people gave, what landed in each zone, every card that moved or was edited, what nobody touched, and, separately, what agents added on later passes.
+It compares the board with how it looked just before a person first touched it: what happened to each proposed group (kept, thinned when single cards left it, split when it came apart in blocs, merged, dissolved, moved to a zone) with your `why` beside it, how many of your pairings survived, connections people made that you didn't (cards they carried into another group, and cards they dropped onto each other), names people gave, what landed in each zone, every card that moved or was edited, what nobody touched, and, separately, what agents added on later passes.
 
 Interpret it as a delta in judgment, keeping what people did separate from your inferences:
 
 1. **Where the room agreed**: groups and pairs kept.
-2. **Where it redrew the lines**: splits, merges, new pairs. Each is a claim about the material you didn't make. Say what it implies.
+2. **Where it redrew the lines**: cards carried out of groups, splits, merges, cards dropped onto each other. Each is a claim about the material you didn't make. Say what it implies.
 3. **What it named**: quote the label and compare it with the `why` you recorded.
 4. **What it brought**: stickies and new groups.
 5. **What it ignored or deleted**: untouched cards are often the most informative line, especially pairings.

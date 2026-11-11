@@ -8,9 +8,9 @@ const shapeUtils = [CardShapeUtil, ClusterShapeUtil]
 const params = new URLSearchParams(location.search)
 const boardId = params.get('board')
 // A shared link carries no name, so whoever opens it is asked once and remembered in this browser.
-const NAME_KEY = 'roomboard:name'
+const NAME_KEY = 'wallflower:name'
 function savedName() {
-  try { return localStorage.getItem(NAME_KEY) } catch { return null }
+  try { return localStorage.getItem(NAME_KEY) ?? localStorage.getItem('roomboard:name') } catch { return null }
 }
 const LOOPBACK = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
 
@@ -235,7 +235,7 @@ function NamePrompt({ onDone }) {
   }
   return (
     <form className="rb-list rb-name" onSubmit={submit}>
-      <h1>{title || 'roomboard'}</h1>
+      <h1>{title || 'Wallflower'}</h1>
       <p>Your name, so people can see who moved what:</p>
       <input autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="Your name" maxLength={40} data-testid="name-input" />
       <button type="submit">Open the board</button>
@@ -316,9 +316,9 @@ function BoardList({ name }) {
   }, [])
   return (
     <div className="rb-list">
-      <h1>roomboard</h1>
+      <h1>Wallflower</h1>
       {Array.isArray(boards) && boards.map((b) => <a key={b.id} href={`?board=${b.id}${name ? `&name=${encodeURIComponent(name)}` : ''}`}>{b.title} <small>{b.cards} cards</small></a>)}
-      {Array.isArray(boards) && !boards.length && <p>No boards yet. Create one with <code>board new "Title"</code></p>}
+      {Array.isArray(boards) && !boards.length && <p>No boards yet. Create one with <code>wallflower new "Title"</code></p>}
       {boards === 'private' && <p>Boards here are private. Open one from the link you were given.</p>}
       {boards === 'error' && <p>Couldn't reach the board server.</p>}
     </div>

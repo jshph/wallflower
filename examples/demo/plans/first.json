@@ -1,0 +1,250 @@
+{
+ "groups": [
+  {
+   "id": "said",
+   "col": 0,
+   "row": 0,
+   "cols": 2,
+   "why": "what customers said, in calls and tickets"
+  },
+  {
+   "id": "wrote",
+   "col": 1,
+   "row": 0,
+   "cols": 1,
+   "why": "what we said to each other"
+  },
+  {
+   "id": "code",
+   "col": 1,
+   "row": 1,
+   "cols": 1,
+   "why": "what is in the code and the queue"
+  },
+  {
+   "id": "november",
+   "label": "November",
+   "col": 2,
+   "row": 0,
+   "zone": true
+  }
+ ],
+ "cards": [
+  {
+   "id": "teresa",
+   "kind": "quote",
+   "title": "Teresa reads an item out loud",
+   "body": "milk, the GOOD one, sorry about Tuesday",
+   "source": {
+    "label": "Call with Teresa",
+    "file": "../corpus/granola/2026-10-14-call-teresa.md",
+    "author": "Teresa",
+    "date": "Oct 14"
+   },
+   "place": {
+    "in": "said"
+   }
+  },
+  {
+   "id": "jonah",
+   "kind": "quote",
+   "title": "Jonah on who makes the list",
+   "body": "I make the list, he gets blamed",
+   "source": {
+    "label": "Call with Jonah",
+    "file": "../corpus/granola/2026-10-17-call-jonah.md",
+    "author": "Jonah",
+    "date": "Oct 17"
+   },
+   "place": {
+    "in": "said"
+   }
+  },
+  {
+   "id": "persona",
+   "kind": "note",
+   "title": "The household we designed for",
+   "body": "“They plan the week's meals on Sunday, own the list, and delegate the run.”",
+   "source": {
+    "label": "Persona: the Household Manager",
+    "file": "../corpus/notion/persona-household-manager.md",
+    "quote": "They plan the week's meals on Sunday, own the list, and delegate the run."
+   },
+   "why": "a persona against a voice: who the list belongs to",
+   "place": {
+    "near": "jonah",
+    "side": "right",
+    "overlap": true
+   }
+  },
+  {
+   "id": "ana",
+   "kind": "quote",
+   "title": "Ana on how her daughter shops",
+   "body": "She takes a picture of my fridge first. Every time.",
+   "source": {
+    "label": "Call with Ana",
+    "file": "../corpus/granola/2026-10-21-call-ana.md",
+    "author": "Ana",
+    "date": "Oct 21"
+   },
+   "place": {
+    "in": "said"
+   }
+  },
+  {
+   "id": "ticket",
+   "kind": "quote",
+   "title": "A list vanished after the last item was checked",
+   "body": "I checked off everything at the store and the whole list disappeared??",
+   "source": {
+    "label": "Support ticket",
+    "file": "../corpus/support/2026-10-22-where-is-my-list.md",
+    "author": "Jonah",
+    "date": "Oct 22"
+   },
+   "place": {
+    "in": "said"
+   }
+  },
+  {
+   "id": "camera",
+   "kind": "quote",
+   "title": "Sam in #product",
+   "body": "we're competing with the camera roll and losing",
+   "source": {
+    "label": "#product",
+    "file": "../corpus/slack/product.md",
+    "author": "Sam"
+   },
+   "place": {
+    "in": "wrote"
+   }
+  },
+  {
+   "id": "threemonths",
+   "kind": "quote",
+   "title": "Maya in #support",
+   "body": "nobody should be keeping a list for 3 months lol",
+   "source": {
+    "label": "#support",
+    "file": "../corpus/slack/support.md",
+    "author": "Maya"
+   },
+   "place": {
+    "in": "wrote"
+   }
+  },
+  {
+   "id": "onboarding",
+   "kind": "note",
+   "title": "Onboarding copy, v3",
+   "body": "A rewrite of the first-run screens.",
+   "source": {
+    "label": "Notion",
+    "file": "../corpus/notion/onboarding-copy-v3.md"
+   },
+   "place": {
+    "in": "wrote"
+   }
+  },
+  {
+   "id": "comments",
+   "kind": "note",
+   "title": "Item comments",
+   "body": "Backlog, low. “Not for Q4. Revisit after recipe import ships.”",
+   "source": {
+    "label": "Linear LAR-88",
+    "file": "../corpus/linear/LAR-88-item-comments.md",
+    "quote": "Not for Q4. Revisit after recipe import ships."
+   },
+   "place": {
+    "in": "code"
+   }
+  },
+  {
+   "id": "editedby",
+   "kind": "note",
+   "title": "Dev's PR: show who edited an item",
+   "body": "Stores the editor on each item and shows “edited by Wes” in the item sheet.",
+   "source": {
+    "label": "PR #219",
+    "file": "../corpus/github/pr-219-last-edited-by.md",
+    "author": "Dev",
+    "quote": "edited by Wes"
+   },
+   "place": {
+    "in": "code"
+   }
+  },
+  {
+   "id": "pricing",
+   "kind": "note",
+   "title": "Pricing page test",
+   "body": "An A/B test of the pricing page.",
+   "source": {
+    "label": "Linear LAR-115",
+    "file": "../corpus/linear/LAR-115-pricing-page-test.md"
+   },
+   "place": {
+    "in": "code"
+   }
+  },
+  {
+   "id": "q4",
+   "kind": "note",
+   "title": "Q4 bet: recipe import",
+   "body": "Decided Oct 3. Success: +15% new households per week by Dec 31.",
+   "source": {
+    "label": "Q4: Recipe import",
+    "file": "../corpus/notion/q4-recipe-import.md",
+    "author": "Maya",
+    "date": "Oct 3",
+    "quote": "+15% new households per week by Dec 31."
+   },
+   "place": {
+    "in": "november"
+   }
+  },
+  {
+   "id": "metrics",
+   "kind": "note",
+   "title": "Recipe import, three weeks in",
+   "body": "3.1% of weekly actives have used it. Sharing invites up 22%, unexplained.",
+   "source": {
+    "label": "Maya's metrics note",
+    "file": "../corpus/notion/recipe-import-three-weeks-in.md",
+    "author": "Maya",
+    "date": "Oct 24",
+    "quote": "3.1% of weekly actives have used it at least once."
+   },
+   "why": "the decision next to what has happened since",
+   "place": {
+    "near": "q4",
+    "side": "right",
+    "overlap": true
+   }
+  },
+  {
+   "id": "start",
+   "kind": "prompt",
+   "title": "Start here",
+   "body": "What are people using the list for? Move things, write what you see.",
+   "place": {
+    "at": {
+     "x": 0,
+     "y": -230
+    }
+   }
+  },
+  {
+   "id": "nextprompt",
+   "kind": "prompt",
+   "title": "Drag into November what we're doing next.",
+   "place": {
+    "edge": "november",
+    "side": "below"
+   }
+  }
+ ]
+}

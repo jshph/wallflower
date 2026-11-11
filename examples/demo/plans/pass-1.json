@@ -1,0 +1,61 @@
+{
+ "cards": [
+  {
+   "id": "letters",
+   "kind": "quote",
+   "title": "Sam in #random",
+   "body": "ok users are writing letters to each other in this app 😭",
+   "source": {
+    "label": "#random",
+    "file": "../corpus/slack/random.md",
+    "author": "Sam"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "emoji",
+   "kind": "quote",
+   "title": "A user, on GitHub",
+   "body": "Can you allow emoji in items? My son only replies in emoji",
+   "source": {
+    "label": "Issue #198",
+    "file": "../corpus/github/issue-198-emoji-in-items.md"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "anatalk",
+   "kind": "quote",
+   "title": "Ana on what the list is for",
+   "body": "It's how we talk when we're not talking, me and my daughter.",
+   "source": {
+    "label": "Call with Ana",
+    "file": "../corpus/granola/2026-10-21-call-ana.md",
+    "author": "Ana",
+    "date": "Oct 21"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "rob",
+   "kind": "quote",
+   "title": "Rob on notes in items",
+   "body": "I strip all that out. It's a list. Eggs, twelve.",
+   "source": {
+    "label": "Call with Rob",
+    "file": "../corpus/granola/2026-10-22-call-rob.md",
+    "author": "Rob",
+    "date": "Oct 22"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  }
+ ]
+}

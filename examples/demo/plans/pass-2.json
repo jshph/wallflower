@@ -1,0 +1,60 @@
+{
+ "cards": [
+  {
+   "id": "whosuser",
+   "kind": "quote",
+   "title": "Maya in #product, no replies",
+   "body": "genuine question, who's our user here, the planner or the shopper",
+   "source": {
+    "label": "#product",
+    "file": "../corpus/slack/product.md",
+    "author": "Maya"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "assign",
+   "kind": "note",
+   "title": "Assign items to a person",
+   "body": "Canceled: “adds complexity for one request.”",
+   "source": {
+    "label": "Linear LAR-71",
+    "file": "../corpus/linear/LAR-71-assign-items.md",
+    "quote": "adds complexity for one request."
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "whoadded",
+   "kind": "quote",
+   "title": "Priya in #support",
+   "body": "third \"who added this?\" ticket this week",
+   "source": {
+    "label": "#support",
+    "file": "../corpus/slack/support.md",
+    "author": "Priya"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "alone",
+   "kind": "quote",
+   "title": "A ticket from someone who lives alone",
+   "body": "How do I turn off sharing? It's just me.",
+   "source": {
+    "label": "Support ticket",
+    "file": "../corpus/support/2026-10-20-turn-off-sharing.md",
+    "date": "Oct 20"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  }
+ ]
+}

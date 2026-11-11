@@ -249,11 +249,14 @@ export function fitGroups(board, ids = null) {
 // A group moves with its cards. Pinned groups, groups holding a pinned card, and the
 // anchors (groups that just received the agent's new cards) stay put.
 export function settleBoard(board, anchors = new Set()) {
+  // Cards the agent put at coordinates or at a group's edge belong outside every group; if a
+  // group grew over one, it gets pushed clear rather than carried along.
+  const outside = (c) => agentOwned(c) && c.kind !== 'sticky' && (intentOf(c)?.at || intentOf(c)?.edge)
   const members = {}
-  for (const c of Object.values(board.cards)) { const g = membershipOf(c, board.clusters); if (g) (members[g] ??= []).push(c) }
+  for (const c of Object.values(board.cards)) { if (outside(c)) continue; const g = membershipOf(c, board.clusters); if (g) (members[g] ??= []).push(c) }
   const bodies = [
     ...Object.values(board.clusters).map((cl) => ({ id: cl.id, rect: cl, cards: members[cl.id] ?? [], movable: agentOwned(cl) && !anchors.has(cl.id) && !(members[cl.id] ?? []).some((c) => c.pinned) })),
-    ...Object.values(board.cards).filter((c) => !membershipOf(c, board.clusters) && c.kind !== 'sticky').map((c) => ({ id: c.id, rect: c, cards: [], movable: agentOwned(c) && !anchors.has(c.id), card: true })),
+    ...Object.values(board.cards).filter((c) => c.kind !== 'sticky' && (outside(c) || !membershipOf(c, board.clusters))).map((c) => ({ id: c.id, rect: c, cards: [], movable: agentOwned(c) && !anchors.has(c.id), card: true, outside: !!outside(c) })),
   ]
   const moved = new Set()
   const shift = (b, dx, dy) => {
@@ -268,7 +271,7 @@ export function settleBoard(board, anchors = new Set()) {
       const [a, b] = [bodies[i], bodies[j]]
       if (!a.movable && !b.movable) continue
       // A loose card inside a group's box is that group's business, not a collision.
-      if (a.card !== b.card && (a.card ? contains(b.rect, center(a.rect)) : contains(a.rect, center(b.rect)))) continue
+      if (a.card !== b.card && !(a.card ? a : b).outside && (a.card ? contains(b.rect, center(a.rect)) : contains(a.rect, center(b.rect)))) continue
       if (overlaps(a.rect, b.rect, gapFor(a, b) - 1)) pair = [a, b]
     }
     if (!pair) break

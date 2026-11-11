@@ -1,0 +1,62 @@
+{
+ "cards": [
+  {
+   "id": "photo1",
+   "kind": "quote",
+   "title": "Support, one household",
+   "body": "Can I add a photo to an item?",
+   "source": {
+    "label": "Support ticket",
+    "file": "../corpus/support/2026-10-19-photo-on-item.md",
+    "date": "Oct 19"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "photo2",
+   "kind": "quote",
+   "title": "Support, a different household",
+   "body": "Can I add a photo to an item?",
+   "source": {
+    "label": "Support ticket",
+    "file": "../corpus/support/2026-10-23-attach-a-photo.md",
+    "date": "Oct 23"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "photoclosed",
+   "kind": "note",
+   "title": "Photo on item, closed",
+   "body": "“Two asks, both from the same household? Closing.”",
+   "source": {
+    "label": "Linear LAR-102",
+    "file": "../corpus/linear/LAR-102-photo-attachment-on-item.md",
+    "author": "Maya",
+    "quote": "Two asks, both from the same household? Closing."
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "chaos",
+   "kind": "quote",
+   "title": "Teresa on photos of the fridge",
+   "body": "A photo of my fridge would tell you nothing, it's chaos in there.",
+   "source": {
+    "label": "Call with Teresa",
+    "file": "../corpus/granola/2026-10-14-call-teresa.md",
+    "author": "Teresa",
+    "date": "Oct 14"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  }
+ ]
+}

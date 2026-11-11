@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
+import { env, homeDir } from './env.mjs'
 import { BoardStore, PROPOSED } from './store.mjs'
 import { diffBoards, diffToMarkdown } from './diff.mjs'
 import { boardToAscii, boardToListing } from './ascii.mjs'
@@ -12,19 +13,19 @@ import { checkBoard } from './arrange.mjs'
 import { roundToMarkdown } from './round.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-// PORT is what hosts like Railway set; ROOMBOARD_PORT wins when both are present.
-const PORT = Number(process.env.ROOMBOARD_PORT ?? process.env.PORT ?? 8787)
-const HOST = process.env.ROOMBOARD_HOST ?? '127.0.0.1'
+// PORT is what hosts like Railway set; WALLFLOWER_PORT wins when both are present.
+const PORT = Number(env('PORT') ?? process.env.PORT ?? 8787)
+const HOST = env('HOST') ?? '127.0.0.1'
 const DIST = path.join(root, 'dist')
 // Where people open boards: the Vite dev server in development, this server when it serves the built UI.
-const UI = process.env.ROOMBOARD_UI ?? (process.env.ROOMBOARD_DEV ? `http://localhost:${process.env.ROOMBOARD_UI_PORT ?? 5173}` : `http://localhost:${PORT}`)
-const store = new BoardStore(process.env.ROOMBOARD_DATA ?? path.join(os.homedir(), '.roomboard', 'data'))
+const UI = env('UI') ?? (env('DEV') ? `http://localhost:${env('UI_PORT') ?? 5173}` : `http://localhost:${PORT}`)
+const store = new BoardStore(env('DATA') ?? path.join(homeDir(), 'data'))
 const MAX_BODY = 1024 * 1024
 
-// Hosted mode. With ROOMBOARD_TOKEN set, a board's id is its capability: new ids are random
+// Hosted mode. With WALLFLOWER_TOKEN set, a board's id is its capability: new ids are random
 // (144 bits), and anyone holding a board's link can view, edit, and read it back. The token
 // gates only what isn't scoped to one board: listing every board and creating new ones.
-const TOKEN = process.env.ROOMBOARD_TOKEN || null
+const TOKEN = env('TOKEN') || null
 const digest = (s) => crypto.createHash('sha256').update(s).digest()
 function hasToken(req) {
   if (!TOKEN) return true
@@ -33,11 +34,11 @@ function hasToken(req) {
 }
 
 // There is no login, so only answer requests addressed to a loopback name or a host listed in
-// ROOMBOARD_ALLOWED_HOSTS (comma-separated; ".example.com" matches subdomains, "all" matches
+// WALLFLOWER_ALLOWED_HOSTS (comma-separated; ".example.com" matches subdomains, "all" matches
 // anything). Checking Host blocks DNS rebinding; checking Origin stops other sites' pages,
 // which can open WebSockets to localhost freely, from editing boards.
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
-const ALLOWED = (process.env.ROOMBOARD_ALLOWED_HOSTS ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean)
+const ALLOWED = (env('ALLOWED_HOSTS') ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean)
 
 function hostAllowed(hostname) {
   hostname = hostname.toLowerCase()
@@ -67,7 +68,7 @@ function serveStatic(res, pathname) {
 const sockets = new Map() // boardId -> Set<ws>
 const presence = new Map() // boardId -> Map<actor, {status, t}>
 const viewers = new Map() // `${boardId} ${actor}` -> open socket count
-const waiters = new Map() // boardId -> Set<{ res, actor, timer }>: agents blocked in `board wait`
+const waiters = new Map() // boardId -> Set<{ res, actor, timer }>: agents blocked in `wallflower wait`
 const WAIT_MS = 240_000 // under undici's 300s header timeout; the CLI re-polls
 
 function broadcast(boardId, msg) {
@@ -139,7 +140,7 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('referrer-policy', 'no-referrer')
   res.setHeader('x-robots-tag', 'noindex, nofollow')
   try {
-    if (!requestAllowed(req)) return send(res, 403, { error: 'host not allowed; see ROOMBOARD_ALLOWED_HOSTS' })
+    if (!requestAllowed(req)) return send(res, 403, { error: 'host not allowed; see WALLFLOWER_ALLOWED_HOSTS' })
     const url = new URL(req.url, `http://${req.headers.host}`)
     const actor = req.headers['x-actor'] || url.searchParams.get('actor') || 'agent:unknown'
     const parts = url.pathname.split('/').filter(Boolean)
@@ -148,7 +149,7 @@ const server = http.createServer(async (req, res) => {
     if (parts[1] === 'info' && parts.length === 2) return send(res, 200, { ui: UI, hosted: !!TOKEN })
 
     if (parts[1] === 'boards' && parts.length === 2) {
-      if (!hasToken(req)) return send(res, 401, { error: 'this server needs ROOMBOARD_TOKEN to list or create boards; open a board by its link' })
+      if (!hasToken(req)) return send(res, 401, { error: 'this server needs WALLFLOWER_TOKEN to list or create boards; open a board by its link' })
       if (req.method === 'GET') return send(res, 200, store.list().map((id) => { const b = store.get(id); return { id, title: b.title, cards: Object.keys(b.cards).length, rev: b.rev } }))
       if (req.method === 'POST') {
         const { id: wanted, ...rest } = await body(req)
@@ -193,8 +194,9 @@ const server = http.createServer(async (req, res) => {
     }
     if (sub === 'diff') {
       const from = store.getSnapshot(id, PROPOSED)
-      if (!from) return send(res, 200, 'Nobody has touched the board yet.\n', 'text/plain')
+      if (!from) return url.searchParams.get('format') === 'json' ? send(res, 200, null) : send(res, 200, 'Nobody has touched the board yet.\n', 'text/plain')
       const d = diffBoards(from, board, store.events(id))
+      if (url.searchParams.get('format') === 'json') return send(res, 200, d)
       return send(res, 200, diffToMarkdown(d, from.state, board) + '\n', 'text/plain')
     }
     return send(res, 404, { error: 'not found' })
@@ -240,4 +242,4 @@ wss.on('connection', (ws, req) => {
   })
 })
 
-server.listen(PORT, HOST, () => console.log(`roomboard server on http://${HOST.includes(':') ? `[${HOST}]` : HOST}:${PORT}, boards at ${UI}${TOKEN ? ' (hosted: token required to list or create boards)' : ''}`))
+server.listen(PORT, HOST, () => console.log(`wallflower server on http://${HOST.includes(':') ? `[${HOST}]` : HOST}:${PORT}, boards at ${UI}${TOKEN ? ' (hosted: token required to list or create boards)' : ''}`))

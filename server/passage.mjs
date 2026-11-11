@@ -1,5 +1,5 @@
 // A source preview: about 200 words of the source around a card's quote, cut by the CLI
-// at `board put` time so the board carries a frozen copy and never needs the full file.
+// at `wallflower put` time so the board carries a frozen copy and never needs the full file.
 
 export const WINDOW_WORDS = 100 // on each side of the quote
 const SNAP_WORDS = 30 // how far the edges may move inward to land on a sentence break

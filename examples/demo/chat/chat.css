@@ -1,0 +1,88 @@
+:root {
+  --bg: #faf9f5;
+  --ink: #1f1e1d;
+  --muted: #8a8780;
+  --line: #e7e4da;
+  --bubble: #f0eee6;
+  --accent: #d97757;
+  --mark: #fbe7a8;
+  --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --serif: 'Tiempos Text', 'Source Serif 4', 'Iowan Old Style', Georgia, ui-serif, serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+body { display: flex; flex-direction: column; }
+
+.top { height: 52px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid transparent; }
+.convo { font-size: 14px; color: #3d3b37; font-weight: 500; }
+.caret { color: var(--muted); margin-left: 2px; }
+
+main { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+#thread { max-width: 680px; margin: 0 auto; padding: 18px 22px 40px; }
+
+.time { text-align: center; font-size: 12px; color: var(--muted); margin: 26px 0 14px; letter-spacing: 0.01em; }
+
+.user { display: flex; justify-content: flex-end; margin: 10px 0 22px; }
+.user .bubble { background: var(--bubble); border-radius: 18px; padding: 10px 15px; max-width: 82%; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
+
+.agent { margin: 6px 0 24px; }
+.agent .text { font-family: var(--serif); font-size: 16.5px; line-height: 1.62; color: var(--ink); }
+.agent .text p { margin: 0 0 10px; }
+.agent .text a { color: var(--ink); text-decoration: underline; text-decoration-color: #c9c5b9; text-underline-offset: 3px; word-break: break-all; }
+
+/* tool calls: one group per run of calls */
+.tools { border: 1px solid var(--line); border-radius: 12px; background: #fdfcf9; margin: 6px 0 14px; overflow: hidden; }
+.tool + .tool { border-top: 1px solid var(--line); }
+.tool-head { display: flex; align-items: center; gap: 9px; padding: 8px 12px; font-size: 13px; cursor: pointer; user-select: none; min-height: 36px; }
+.tool-icon { width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
+.tool-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #3d3b37; }
+.tool-title b { font-weight: 600; }
+.tool-title .detail { color: var(--muted); margin-left: 6px; }
+.tool-summary { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.tool-chev { color: #b5b1a6; font-size: 11px; transition: transform 0.2s; }
+.tool.is-open .tool-chev { transform: rotate(90deg); }
+.tool.is-running .tool-title { background: linear-gradient(90deg, #3d3b37 0%, #3d3b37 40%, #b9b5aa 50%, #3d3b37 60%, #3d3b37 100%); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 1.6s linear infinite; }
+.tool.is-running .tool-title b, .tool.is-running .tool-title .detail { color: transparent; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+.tool-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; background: #f6f4ee; }
+.tool.is-open .tool-body { max-height: 260px; }
+.excerpt { margin: 0; padding: 8px 0 10px; font: 12px/1.6 var(--mono); color: #57544d; }
+.excerpt .file { padding: 0 12px 4px; color: var(--muted); font-family: var(--sans); font-size: 11.5px; }
+.excerpt .ln { display: flex; padding: 0 12px; white-space: pre-wrap; word-break: break-word; }
+.excerpt .ln .n { color: #bdb8ab; width: 34px; flex-shrink: 0; text-align: right; padding-right: 10px; }
+.excerpt .ln.hit { background: var(--mark); color: var(--ink); }
+
+/* the read-back, folded */
+.details { border: 1px solid var(--line); border-radius: 12px; margin: 4px 0 0; background: #fdfcf9; font-size: 13px; }
+.details summary { padding: 9px 12px; cursor: pointer; color: #3d3b37; list-style: none; }
+.details summary::before { content: '›'; display: inline-block; margin-right: 8px; color: #b5b1a6; transition: transform 0.2s; }
+.details[open] summary::before { transform: rotate(90deg); }
+.details .md { padding: 4px 16px 12px; max-height: 340px; overflow-y: auto; font-size: 13px; line-height: 1.55; color: #3d3b37; }
+.details .md h4 { margin: 12px 0 4px; font-size: 13px; }
+.details .md ul { margin: 0; padding-left: 18px; }
+.details .md p { margin: 4px 0; }
+
+/* working */
+.spark { display: inline-block; width: 22px; height: 22px; margin: 4px 0 18px; }
+.spark svg { width: 100%; height: 100%; animation: spin 2.4s linear infinite, pulse 1.2s ease-in-out infinite; transform-origin: center; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 50% { opacity: 0.55; } }
+
+.composer-wrap { flex-shrink: 0; padding: 0 22px 18px; }
+.composer { max-width: 680px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 12px 14px 10px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 22px -14px rgba(0, 0, 0, 0.2); }
+.draft { min-height: 24px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
+.draft.is-empty { color: #a29f96; }
+.draft .cursor { display: inline-block; width: 1.5px; height: 1.1em; background: var(--ink); vertical-align: -2px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.composer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.composer-tools { display: flex; gap: 6px; }
+.ctool { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; color: #8a8780; font-size: 14px; }
+.composer-right { display: flex; align-items: center; gap: 10px; }
+.model { font-size: 13px; color: #6b6860; }
+.send { width: 32px; height: 32px; border-radius: 9px; border: none; background: #e9c3b4; color: #fff; font-size: 16px; font-weight: 700; }
+.send.is-ready { background: var(--accent); }
+
+/* only visible to whoever is recording, and only before the first message */
+.hint { position: fixed; left: 12px; bottom: 8px; font-size: 11px; color: #c2beb3; }
+.hint a { color: #a8a397; }

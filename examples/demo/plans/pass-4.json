@@ -1,0 +1,62 @@
+{
+ "cards": [
+  {
+   "id": "filed",
+   "kind": "quote",
+   "title": "Lin, filing #212",
+   "body": "support says people are surprised. Filing so we can decide on purpose.",
+   "source": {
+    "label": "Issue #212",
+    "file": "../corpus/github/issue-212-lists-auto-archive.md",
+    "author": "Lin"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "archive141",
+   "kind": "note",
+   "title": "Auto-archive shipped in April",
+   "body": "#141: a list archives itself once every item is checked.",
+   "source": {
+    "label": "Issue #141",
+    "file": "../corpus/github/issue-141-auto-archive-completed-lists.md",
+    "author": "Lin"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "thelist",
+   "kind": "quote",
+   "title": "Jonah on the list",
+   "body": "it's not a shopping list, it's the list",
+   "source": {
+    "label": "Call with Jonah",
+    "file": "../corpus/granola/2026-10-17-call-jonah.md",
+    "author": "Jonah",
+    "date": "Oct 17"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  },
+  {
+   "id": "robarchive",
+   "kind": "quote",
+   "title": "Rob on auto-archive",
+   "body": "Auto-archive is the best thing you built.",
+   "source": {
+    "label": "Call with Rob",
+    "file": "../corpus/granola/2026-10-22-call-rob.md",
+    "author": "Rob",
+    "date": "Oct 22"
+   },
+   "place": {
+    "around": "__STICKY__"
+   }
+  }
+ ]
+}

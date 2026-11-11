@@ -195,3 +195,14 @@ test('checks: once a person moves a card\'s partner, the pairing is no longer he
   s.apply('t', [{ op: 'card.move', id: 'read', x: b.clusters.asks.x + 40, y: b.clusters.asks.y + b.clusters.asks.h - 140 }], HU)
   assert.equal(checkBoard(s.get('t')).filter((p) => p.type === 'wrong-group').length, 0)
 })
+
+test('live: a growing group pushes the agent\'s free-standing prompt clear instead of swallowing it', () => {
+  const s = fresh()
+  s.applyPlan('t', { groups: [{ id: 'g', col: 0 }], cards: [{ id: 'c1', kind: 'note', title: 'a card', place: { in: 'g' } }, { id: 'p', kind: 'prompt', title: 'Start here', place: { at: { x: 0, y: -140 } } }] }, AG)
+  const b = s.get('t')
+  s.apply('t', [{ op: 'card.upsert', id: 'st', kind: 'sticky', title: 'more', x: b.cards.c1.x + 40, y: b.cards.c1.y + 10 }], HU)
+  s.applyPlan('t', { cards: ['a', 'b', 'c', 'd', 'e'].map((k) => ({ id: `r-${k}`, kind: 'note', title: `ring ${k}`, place: { around: 'st' } })) }, AG)
+  const a = s.get('t')
+  assert.equal(membershipOf(a.cards.p, a.clusters), null, 'the prompt still reads as outside any group')
+  assert.ok(!overlaps(a.cards.p, a.clusters.g), 'and sits clear of the group')
+})

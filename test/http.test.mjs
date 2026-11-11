@@ -24,11 +24,11 @@ async function freePort() {
 async function start(env = {}) {
   const port = await freePort()
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'rb-http-'))
-  const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('ROOMBOARD_') && k !== 'PORT'))
-  const p = spawn(process.execPath, [path.join(root, 'server/index.mjs')], { env: { ...clean, ROOMBOARD_DATA: data, ...env, PORT: String(port) }, stdio: ['ignore', 'pipe', 'inherit'] })
+  const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('ROOMBOARD_') && !k.startsWith('WALLFLOWER_') && k !== 'PORT'))
+  const p = spawn(process.execPath, [path.join(root, 'server/index.mjs')], { env: { ...clean, WALLFLOWER_DATA: data, ...env, PORT: String(port) }, stdio: ['ignore', 'pipe', 'inherit'] })
   procs.push(p)
   await new Promise((ok, fail) => {
-    p.stdout.on('data', (d) => { if (String(d).includes('roomboard server on')) ok() })
+    p.stdout.on('data', (d) => { if (String(d).includes('wallflower server on')) ok() })
     p.once('exit', (code) => fail(new Error(`server exited ${code}`)))
   })
   const base = `http://127.0.0.1:${port}`
@@ -41,7 +41,7 @@ async function start(env = {}) {
 }
 
 test('hosted: listing and creating need the token; boards get unguessable ids', async () => {
-  const { req } = await start({ ROOMBOARD_TOKEN: 's3cret' })
+  const { req } = await start({ WALLFLOWER_TOKEN: 's3cret' })
   assert.equal((await (await req('GET', '/api/info')).json()).hosted, true, 'the CLI says links are shareable')
   assert.equal((await req('GET', '/api/boards')).status, 401)
   assert.equal((await req('POST', '/api/boards', { body: { title: 'x' } })).status, 401)
@@ -68,7 +68,7 @@ test('hosted: listing and creating need the token; boards get unguessable ids', 
 })
 
 test('a browser edit over the socket shows up in the read-back', async () => {
-  const { req, port } = await start({ ROOMBOARD_TOKEN: 't' })
+  const { req, port } = await start({ WALLFLOWER_TOKEN: 't' })
   const { id } = await (await req('POST', '/api/boards', { token: 't', body: { title: 'ws' } })).json()
   await req('POST', `/api/boards/${id}/plan`, { body: { cards: [{ id: 'c1', kind: 'note', title: 'agent card' }] } })
   const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?board=${id}&actor=human:kim`)
@@ -101,7 +101,7 @@ test('oversized bodies and socket messages are refused', async () => {
 })
 
 test('requests for other hostnames or from other sites are refused', async () => {
-  const { req, port } = await start({ ROOMBOARD_ALLOWED_HOSTS: 'board.example.com' })
+  const { req, port } = await start({ WALLFLOWER_ALLOWED_HOSTS: 'board.example.com' })
   // fetch won't let us set Host, so use http.request.
   const status = (headers) => new Promise((ok, fail) => http.get({ port, host: '127.0.0.1', path: '/api/info', headers }, (r) => { r.resume(); ok(r.statusCode) }).on('error', fail))
   assert.equal(await status({ host: 'evil.test' }), 403)
@@ -109,4 +109,14 @@ test('requests for other hostnames or from other sites are refused', async () =>
   assert.equal(await status({ host: 'board.example.com', origin: 'https://board.example.com' }), 200)
   const r = await req('GET', '/api/info')
   assert.equal(r.headers.get('referrer-policy'), 'no-referrer')
+})
+
+test('settings: WALLFLOWER_* wins, the old ROOMBOARD_* names still work', async () => {
+  const { env } = await import('../server/env.mjs')
+  process.env.ROOMBOARD_ZZTEST = 'old'
+  assert.equal(env('ZZTEST'), 'old')
+  process.env.WALLFLOWER_ZZTEST = 'new'
+  assert.equal(env('ZZTEST'), 'new')
+  delete process.env.ROOMBOARD_ZZTEST
+  delete process.env.WALLFLOWER_ZZTEST
 })

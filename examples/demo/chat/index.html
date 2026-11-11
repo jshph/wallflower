@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thursday planning board</title>
+<link rel="stylesheet" href="chat.css">
+</head>
+<body>
+<header class="top">
+  <div class="convo">Thursday planning board <span class="caret">⌄</span></div>
+</header>
+<main id="scroll">
+  <div id="thread"></div>
+</main>
+<footer class="composer-wrap">
+  <div class="composer">
+    <div id="draft" class="draft is-empty">Reply…</div>
+    <div class="composer-row">
+      <div class="composer-tools"><span class="ctool">＋</span><span class="ctool">⚙</span></div>
+      <div class="composer-right"><span class="model">Claude</span><button id="send" class="send" aria-label="Send">↑</button></div>
+    </div>
+  </div>
+</footer>
+<div id="hint" class="hint"></div>
+<script src="chat.js"></script>
+</body>
+</html>

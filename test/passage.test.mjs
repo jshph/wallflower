@@ -82,10 +82,10 @@ test('board put cuts the passage from source.file and never uploads the file', a
   const port = s.address().port
   await new Promise((ok) => s.close(ok))
   const data = tmp()
-  const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('ROOMBOARD_') && k !== 'PORT'))
-  const srv = spawn(process.execPath, [path.join(root, 'server/index.mjs')], { env: { ...clean, ROOMBOARD_DATA: data, PORT: String(port) }, stdio: ['ignore', 'pipe', 'inherit'] })
+  const clean = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('ROOMBOARD_') && !k.startsWith('WALLFLOWER_') && k !== 'PORT'))
+  const srv = spawn(process.execPath, [path.join(root, 'server/index.mjs')], { env: { ...clean, WALLFLOWER_DATA: data, PORT: String(port) }, stdio: ['ignore', 'pipe', 'inherit'] })
   procs.push(srv)
-  await new Promise((ok) => srv.stdout.on('data', (d) => { if (String(d).includes('roomboard server on')) ok() }))
+  await new Promise((ok) => srv.stdout.on('data', (d) => { if (String(d).includes('wallflower server on')) ok() }))
 
   const dir = tmp()
   fs.writeFileSync(path.join(dir, 'notes.md'), `${filler(500, 'secret')}. Rosa said "I couldn't tell what it wanted from me" and laughed. ${filler(500, 'tail')}.`)
@@ -94,8 +94,8 @@ test('board put cuts the passage from source.file and never uploads the file', a
     { id: 'kim', kind: 'quote', title: 'Kim', body: 'never said this', source: { file: 'notes.md' } },
     { id: 'hand', kind: 'note', title: 'x', source: { passage: { text: 'written by hand' } } },
   ] }))
-  const env = { ...clean, ROOMBOARD_URL: `http://127.0.0.1:${port}`, ROOMBOARD_BOARD: 'p', HOME: tmp() }
-  const cli = (...a) => promisify(execFile)(process.execPath, [path.join(root, 'bin/board.mjs'), ...a], { env })
+  const env = { ...clean, WALLFLOWER_URL: `http://127.0.0.1:${port}`, WALLFLOWER_BOARD: 'p', HOME: tmp() }
+  const cli = (...a) => promisify(execFile)(process.execPath, [path.join(root, 'bin/wallflower.mjs'), ...a], { env })
   await cli('new', 'x', '--id', 'p')
   const { stderr } = await cli('put', path.join(dir, 'plan.json'))
   assert.match(stderr, /card kim: quote not found/)

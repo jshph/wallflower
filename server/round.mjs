@@ -1,4 +1,4 @@
-// What `board wait` hands the agent when someone presses "Take another pass":
+// What `wallflower wait` hands the agent when someone presses "Take another pass":
 // everything people did this round, with each sticky and moved card shown in
 // its neighborhood, and the source files nearby so the agent re-reads those
 // rather than elaborating on the cards it already chose.
@@ -67,16 +67,17 @@ export function roundToMarkdown(board, round) {
   const groups = []
   for (const r of d.renames.filter((r) => isHuman(r.actor))) groups.push(`- ${r.from ? `"${r.from}"` : `unnamed ${r.id}`} named "${r.to}" by ${who(r.actor)}`)
   for (const g of d.newClusters.filter((g) => isHuman(g.createdBy))) groups.push(`- new ${g.role === 'zone' ? 'zone' : 'group'} ${g.label ? `"${g.label}"` : `(unnamed ${g.id})`} by ${who(g.createdBy)}: ${g.members.map((id) => '#' + board.cards[id].n).join(' ') || 'empty'}`)
-  for (const f of d.clusterFates.filter((f) => f.role !== 'zone' && !['kept', 'kept-and-extended'].includes(f.verdict) && f.members)) groups.push(`- ${groupName(start.state, f.id)} ${f.verdict}`)
+  // A thinned group already shows up card by card under "Cards people moved".
+  for (const f of d.clusterFates.filter((f) => f.role !== 'zone' && !['kept', 'kept-and-extended', 'thinned'].includes(f.verdict) && f.members)) groups.push(`- ${groupName(start.state, f.id)} ${f.verdict}`)
   if (groups.length) L.push('', '## Groups', ...groups)
 
   const removed = d.cards.filter((c) => c.status === 'deleted' && byPeople(c))
   if (removed.length) L.push('', '## Removed', ...removed.map((c) => `- #${c.n} ${c.name}`))
 
-  const pairs = [...d.pairs.overlapping.map((p) => [...p, 'overlapping']), ...d.pairs.new.map((p) => [...p, 'same group'])]
-  if (pairs.length) L.push('', '## Pairs people made', ...pairs.slice(0, 15).map(([x, y, how]) => `- ${ref(board.cards[x])} + ${ref(board.cards[y])} (${how})`))
+  // Moves into a group are listed above with their destination; this is only cards dropped onto each other.
+  if (d.pairs.overlapping.length) L.push('', '## Cards people dropped onto each other', ...d.pairs.overlapping.slice(0, 15).map(([x, y]) => `- ${ref(board.cards[x])} + ${ref(board.cards[y])}`))
 
   if (L.length === 2 + round.requests.length) L.push('', 'Nothing on the board changed this round; the request is the whole steer.')
-  L.push('', 'Read this round as a whole. Re-read the sources behind the cards people pointed at before adding anything; `board view` shows the whole board.')
+  L.push('', 'Read this round as a whole. Re-read the sources behind the cards people pointed at before adding anything; `wallflower view` shows the whole board.')
   return L.join('\n')
 }

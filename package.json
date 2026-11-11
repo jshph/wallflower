@@ -1,6 +1,6 @@
 {
   "name": "wallflower-board",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A shared whiteboard your agent fills before a meeting and reads back afterwards",
   "license": "MIT",
   "repository": {
@@ -20,8 +20,8 @@
     "facilitation"
   ],
   "bin": {
-    "wallflower": "./bin/wallflower.mjs",
-    "wf": "./bin/wallflower.mjs"
+    "wallflower": "bin/wallflower.mjs",
+    "wf": "bin/wallflower.mjs"
   },
   "files": [
     "bin",

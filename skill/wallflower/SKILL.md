@@ -40,13 +40,13 @@ wallflower list | wallflower use <id>
 
 Settle three things before gathering. If you can't infer them, ask.
 
-- **What is the room here to judge?** Every meeting exists for one act that belongs to the people in it: choosing, prioritizing, assessing, naming. Your interpretation stops just before that act.
+- **What is the room here to judge?** Every meeting exists for one act that belongs to the people in it: choosing, prioritizing, assessing, naming. The act tells you what to gather and what is worth noticing; it doesn't move where you stop. Even when the act is a decision, the board's part is noticing: it gives the room relations to see, not options to pick from. Your interpretation stops at meaning (see Writing the cards), on every board.
 - **Who is in the room?** This decides what may appear (see Privacy).
 - **What will this board show that the sources don't?** Write it in one sentence. If the answer is "the same notes, in tiles", the board has no job yet. The usual answer is relations between sources that no single source shows: the same note from three people, a decision next to what someone said later, two efforts touching the same thing.
 
-**When the audience is one person** (a private look back, a week in review), they were in every meeting and have read every note. Excerpts tell them nothing. Build the board from patterns across sources, each one shown as two or three cards from different places placed together, plus one orientation card on where things stand (what's pending, who owes whom). Expect fewer, stronger cards.
+**When the audience is one person** (a private look back, a week in review), they were in every meeting and have read every note. Excerpts tell them nothing. Build the board from patterns across sources, each one shown as two or three cards from different places placed together, plus one orientation card on where things stand (what's pending, who owes whom). Expect fewer, stronger cards. The stop line doesn't loosen for one person: show each pattern by placement and leave naming it to them.
 
-| Setting | Stop before | Worth noticing |
+| Setting | The room's act | Worth noticing |
 |---|---|---|
 | Agent-native standup or planning | what needs a human, priority, who takes it | collisions; agents contradicting each other; spec vs. what got built |
 | Design review or crit | taste: what to keep | the same note returning across versions; reviewers who disagree |
@@ -125,7 +125,7 @@ Width is fixed per kind and height follows the copy.
 | `prompt` | marker text on the board: the start card, an open question | ≤160 | ≤200 |
 | `sticky` | what people add (you rarely should) | ≤140 | none |
 
-Set `people` (an array of names, `["Rosa", "Kim", "Lee"]`) when breadth matters; it renders as "from 3 people". A pattern resting on one or two voices should look thin. Put a link in `source.url` only if everyone in the room can open it (a shared doc, a ticket, a PR); never a link to private notes, which is useless to them and leaks where your files live. For files, use `source.file` (below), which stays on your machine.
+Set `people` (an array of names, `["Rosa", "Kim", "Lee"]`) when breadth matters; it renders as "from 3 people". A pattern resting on one or two voices should look thin. Pick the line that sticks, even when it is an outlier, and let `people` say how many said it: a vivid line from one voice should read as one voice. Put a link in `source.url` only if everyone in the room can open it (a shared doc, a ticket, a PR); never a link to private notes, which is useless to them and leaks where your files live. For files, use `source.file` (below), which stays on your machine.
 
 **Source previews.** Give every card that comes from a file its `source.file` (an absolute path; a `file://` url works too). `wallflower put` reads the file on your machine and attaches about 200 words around the card's quote, which people open by double-clicking the card or clicking its source line. The quote is a quote card's `body`; on a note card, set `source.quote` to a verbatim phrase from the file, or the preview is the file's opening. The file itself never leaves your machine. Never write a preview yourself: `put` drops any `source.passage` in the plan. For a source that isn't a file (an email, a ticket), save its raw text with a shell redirect (`gog … > /tmp/src-1.md`) and point `source.file` at that. If `put` warns that a quote wasn't found, the hook isn't verbatim: fix the hook, not the warning.
 
@@ -133,7 +133,7 @@ Set `people` (an array of names, `["Rosa", "Kim", "Lee"]`) when breadth matters;
 
 A board is read at a glance by people who jump off whatever catches them. Most cards should be readable in two seconds.
 
-- **Title = gist**: what this is, in plain words, up to about 60 characters. A description, not a verdict.
+- **Title = gist**: what this card is about, in plain words, up to about 60 characters: who and what, so people can see at a glance which cards go together. Describe, don't claim: "Rosa on the onboarding flow", not "Onboarding confuses new users". The gist is for clustering; the hook carries the voice.
 - **Body = hook**: the shortest verbatim fragment that still sticks. Prefer the odd, concrete or vivid line. Verbatim does not mean the whole passage.
 
 Every piece of text has to answer one question: **what does this let the reader notice, remember, or investigate?** Text whose only job is explaining why you included something (a card that says what it is evidence of, a note that describes the board) is you narrating your preparation. Cut it. Source attribution can sit quietly underneath.
@@ -143,20 +143,20 @@ A note earns its place by doing one of these jobs, roughly in order of how much 
 1. **Hold two things together** so the relationship can be investigated, disputed, or pulled apart.
 2. **Expose a missing piece**: where the evidence runs out ("What did the client actually see you decide?").
 3. **Recover a sequence** that a single quote can't hold.
-4. **Offer a competing reading** of something that has settled too quickly. On a private board this moves up; on a group board, leave most of it to the room.
+4. **Unsettle a reading** that has settled too quickly, by putting what cuts against it beside it, not by arguing for another.
 5. **Bring back an expectation** (what was planned) beside what happened.
 6. **Make room for rehearsal**, usually after the room has made sense of things.
 
 Often the right note is none: two well-placed cards already do job 1. A status note with real information (what's pending, who owes whom) is fine; a note explaining the board is not.
 
-Questions are for the one or two notes doing jobs 2 or 4. A wall of second-person question titles does the room's asking for it and reads as machine-written, just like the self-justifying text it replaces. Titles stay gists.
+Questions are for the one or two notes exposing a missing piece (job 2). A wall of second-person question titles does the room's asking for it and reads as machine-written, just like the self-justifying text it replaces. Titles stay gists.
 
-Stop at meaning. Don't name groups, don't write "this shows…", "key insight", or "the theme here is…", and don't caption why two cards sit together. Placement makes the claim, and someone can dispute a placement by moving a card. Don't hedge on every card either: a caveat belongs on the one card it changes.
+Stop at meaning, on every board, private ones included. Don't name groups, don't write "this shows…", "key insight", or "the theme here is…", and don't caption why two cards sit together. Placement makes the claim, and someone can dispute a placement by moving a card. Don't hedge on every card either: a caveat belongs on the one card it changes.
 
 | Instead of | Write |
 |---|---|
-| title "Pricing notes, Jul 23", body: a 280-character excerpt | gist "Shared links bring visitors who don't stay", hook "they read it once and leave" |
-| title "Kim, support call", body: a full sentence about the export | gist "Kim exports everything to a spreadsheet", hook "I just want the raw rows." |
+| title "Pricing notes, Jul 23", body: a 280-character excerpt | gist "What visitors from shared links do", hook "they read it once and leave" |
+| title "Kim, support call", body: a full sentence about the export | gist "Kim on exporting to a spreadsheet", hook "I just want the raw rows." |
 
 Targets: about 9 to 14 cards for a working session, up to about 40 for synthesis, and a handful of strong pairings rather than many weak ones.
 
@@ -214,3 +214,9 @@ Interpret it as a delta in judgment, keeping what people did separate from your 
 6. **What was decided**: cards in a decision zone. Draft a decision record for each and ask before writing it anywhere.
 
 Report with card numbers and quotes. Don't defend the original layout.
+
+## 6. The next session
+
+The board tells people it remembers, so the next session starts where this one ended. Keep that promise: the board is the memory. When the same room meets again on the same question, reopen its board instead of starting a new one. Run `wallflower use <id>` (ask the user for the link if you don't have it; a hosted server won't list boards), then `wallflower diff` and `wallflower view` to see where the room left it. Then gather what is new since, and add it in one `put` around what the room built, the way you would take a pass. Their groups, names and zones are the starting point: don't rebuild or rename them.
+
+Start a new board only when the question has changed. Then begin from the last read-back: what the room named, paired, set aside and left open. Quote their names and stickies as theirs, with their authors, never as your labels.
